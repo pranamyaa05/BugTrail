@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useUser } from "./user-context";
 import { BUG_SEVERITIES, BUG_PRIORITIES } from "@/lib/workflow";
-import { X, Plus, AlertCircle, Sparkles } from "lucide-react";
+import { X, Plus, AlertCircle } from "lucide-react";
 
 interface ComponentItem {
   id: string;
@@ -126,31 +126,31 @@ export function CreateBugModal({ isOpen, onClose, onSuccess }: CreateBugModalPro
   const currentProduct = products.find((p) => p.id === selectedProductId);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4 animate-in fade-in duration-200">
-      <div className="relative w-full max-w-2xl bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+      <div className="relative w-full max-w-2xl bg-white border border-slate-200 rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800 bg-zinc-900/80">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-white">
           <div className="flex items-center gap-2.5">
-            <div className="p-1.5 rounded-md bg-amber-500/10 text-amber-500 border border-amber-500/20">
+            <div className="p-1.5 rounded-md bg-violet-100 text-violet-600 border border-violet-200">
               <Plus className="w-4 h-4" />
             </div>
             <div>
-              <h2 className="text-base font-semibold text-zinc-100">File a New Defect Report</h2>
-              <p className="text-xs text-zinc-400">Standard Bugzilla Product/Component Hierarchy & Workflow</p>
+              <h2 className="text-base font-semibold text-slate-800">File a New Defect Report</h2>
+              <p className="text-xs text-slate-500">Standard Bugzilla Product/Component Hierarchy & Workflow</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 text-zinc-400 hover:text-zinc-200 rounded-lg hover:bg-zinc-800 transition"
+            className="p-1.5 text-slate-500 hover:text-slate-700 rounded-lg hover:bg-slate-50 transition"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Body */}
-        <form onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-4 text-sm">
+        <form onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-4 text-sm bg-white">
           {error && (
-            <div className="flex items-center gap-2 p-3 bg-red-500/10 border border-red-500/30 text-red-400 rounded-lg text-xs">
+            <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-xs">
               <AlertCircle className="w-4 h-4 shrink-0" />
               <span>{error}</span>
             </div>
@@ -159,13 +159,13 @@ export function CreateBugModal({ isOpen, onClose, onSuccess }: CreateBugModalPro
           {/* Product & Component Row */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-medium text-zinc-300 mb-1.5">
-                Product <span className="text-red-400">*</span>
+              <label className="block text-xs font-medium text-slate-500 mb-1.5">
+                Product <span className="text-red-500">*</span>
               </label>
               <select
                 value={selectedProductId}
                 onChange={(e) => handleProductChange(e.target.value)}
-                className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-zinc-200 focus:outline-none focus:border-amber-500 transition"
+                className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition"
               >
                 {products.map((p) => (
                   <option key={p.id} value={p.id}>
@@ -176,13 +176,13 @@ export function CreateBugModal({ isOpen, onClose, onSuccess }: CreateBugModalPro
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-zinc-300 mb-1.5">
-                Component <span className="text-red-400">*</span>
+              <label className="block text-xs font-medium text-slate-500 mb-1.5">
+                Component <span className="text-red-500">*</span>
               </label>
               <select
                 value={selectedComponentId}
                 onChange={(e) => setSelectedComponentId(e.target.value)}
-                className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-zinc-200 focus:outline-none focus:border-amber-500 transition"
+                className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition"
               >
                 {currentProduct?.components.map((c) => (
                   <option key={c.id} value={c.id}>
@@ -195,40 +195,40 @@ export function CreateBugModal({ isOpen, onClose, onSuccess }: CreateBugModalPro
 
           {/* Title */}
           <div>
-            <label className="block text-xs font-medium text-zinc-300 mb-1.5">
-              Summary / Title <span className="text-red-400">*</span>
+            <label className="block text-xs font-medium text-slate-500 mb-1.5">
+              Summary / Title <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
               placeholder="e.g. Memory leak during WebSocket frame deserialization"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-amber-500 transition"
+              className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition"
             />
           </div>
 
           {/* Description */}
           <div>
-            <label className="block text-xs font-medium text-zinc-300 mb-1.5">
-              Description & Steps to Reproduce <span className="text-red-400">*</span>
+            <label className="block text-xs font-medium text-slate-500 mb-1.5">
+              Description & Steps to Reproduce <span className="text-red-500">*</span>
             </label>
             <textarea
               rows={4}
               placeholder="Detailed description, steps to reproduce, expected vs actual behavior..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-amber-500 transition font-mono text-xs"
+              className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition font-mono text-xs"
             />
           </div>
 
           {/* Severity, Priority, Assignee */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className="block text-xs font-medium text-zinc-300 mb-1.5">Severity</label>
+              <label className="block text-xs font-medium text-slate-500 mb-1.5">Severity</label>
               <select
                 value={severity}
                 onChange={(e) => setSeverity(e.target.value)}
-                className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-zinc-200 focus:outline-none focus:border-amber-500 transition text-xs"
+                className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition text-xs"
               >
                 {BUG_SEVERITIES.map((sev) => (
                   <option key={sev} value={sev}>
@@ -239,11 +239,11 @@ export function CreateBugModal({ isOpen, onClose, onSuccess }: CreateBugModalPro
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-zinc-300 mb-1.5">Priority</label>
+              <label className="block text-xs font-medium text-slate-500 mb-1.5">Priority</label>
               <select
                 value={priority}
                 onChange={(e) => setPriority(e.target.value)}
-                className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-zinc-200 focus:outline-none focus:border-amber-500 transition text-xs"
+                className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition text-xs"
               >
                 {BUG_PRIORITIES.map((prio) => (
                   <option key={prio} value={prio}>
@@ -254,11 +254,11 @@ export function CreateBugModal({ isOpen, onClose, onSuccess }: CreateBugModalPro
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-zinc-300 mb-1.5">Assignee</label>
+              <label className="block text-xs font-medium text-slate-500 mb-1.5">Assignee</label>
               <select
                 value={assigneeId}
                 onChange={(e) => setAssigneeId(e.target.value)}
-                className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-zinc-200 focus:outline-none focus:border-amber-500 transition text-xs"
+                className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition text-xs"
               >
                 <option value="">(Unassigned)</option>
                 {users.map((u) => (
@@ -271,50 +271,50 @@ export function CreateBugModal({ isOpen, onClose, onSuccess }: CreateBugModalPro
           </div>
 
           {/* Custom Fields Collapsible / Info */}
-          <div className="p-3 bg-zinc-950/60 border border-zinc-800/80 rounded-lg space-y-3">
-            <div className="flex items-center justify-between text-xs text-zinc-400 font-medium">
+          <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-3">
+            <div className="flex items-center justify-between text-xs text-slate-500 font-medium">
               <span>Bugzilla Custom Fields (JSONB)</span>
-              <span className="text-[10px] text-amber-500/80 font-mono">Dynamic Schema</span>
+              <span className="text-[10px] text-violet-600 font-mono">Dynamic Schema</span>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
               <div>
-                <label className="block text-[11px] text-zinc-400 mb-1">Target OS / Architecture</label>
+                <label className="block text-[11px] text-slate-500 mb-1">Target OS / Architecture</label>
                 <input
                   type="text"
                   value={osField}
                   onChange={(e) => setOsField(e.target.value)}
-                  className="w-full bg-zinc-900 border border-zinc-800 rounded px-2.5 py-1.5 text-zinc-200 text-xs focus:outline-none focus:border-zinc-700"
+                  className="w-full bg-white border border-slate-200 rounded px-2.5 py-1.5 text-slate-800 text-xs focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20"
                 />
               </div>
               <div>
-                <label className="block text-[11px] text-zinc-400 mb-1">Build / Version Tag</label>
+                <label className="block text-[11px] text-slate-500 mb-1">Build / Version Tag</label>
                 <input
                   type="text"
                   value={buildVersion}
                   onChange={(e) => setBuildVersion(e.target.value)}
-                  className="w-full bg-zinc-900 border border-zinc-800 rounded px-2.5 py-1.5 text-zinc-200 text-xs focus:outline-none focus:border-zinc-700"
+                  className="w-full bg-white border border-slate-200 rounded px-2.5 py-1.5 text-slate-800 text-xs focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20"
                 />
               </div>
             </div>
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center justify-between pt-3 border-t border-zinc-800">
-            <div className="text-xs text-zinc-400">
-              Reporter: <span className="text-zinc-200 font-medium">{currentUser?.name || "Anonymous"}</span>
+          <div className="flex items-center justify-between pt-3 border-t border-slate-200 bg-white">
+            <div className="text-xs text-slate-500">
+              Reporter: <span className="text-slate-800 font-medium">{currentUser?.name || "Anonymous"}</span>
             </div>
             <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 rounded-lg border border-zinc-800 text-zinc-300 hover:bg-zinc-800 transition text-xs font-medium"
+                className="px-4 py-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition text-xs font-medium"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-zinc-950 font-semibold transition text-xs flex items-center gap-1.5 shadow-lg shadow-amber-500/20 disabled:opacity-50"
+                className="px-4 py-2 rounded-lg bg-violet-600 hover:bg-violet-700 text-white font-semibold transition text-xs flex items-center gap-1.5 shadow-sm disabled:opacity-50"
               >
                 {isSubmitting ? "Filing..." : "Submit Bug"}
               </button>

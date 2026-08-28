@@ -9,8 +9,6 @@ import { SeverityBadge, PriorityBadge } from "@/components/severity-badge";
 import {
   ALLOWED_TRANSITIONS,
   BUG_RESOLUTIONS,
-  BUG_SEVERITIES,
-  BUG_PRIORITIES,
   BugStatus,
   BugResolution,
 } from "@/lib/workflow";
@@ -21,14 +19,11 @@ import {
   Clock,
   Send,
   User,
-  Tag,
   Layers,
   FileCode,
-  CheckCircle,
-  AlertCircle,
-  Hash,
   Activity,
-  History,
+  Hash,
+  RefreshCw,
 } from "lucide-react";
 
 export default function BugDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -57,7 +52,7 @@ export default function BugDetailPage({ params }: { params: Promise<{ id: string
   const loadBug = () => {
     fetch(`/api/bugs/${bugId}`)
       .then((res) => {
-        if (!res.ok) throw new Error("Failed to load bug details");
+        if (!res.ok) throw new Error("Failed to load defect details");
         return res.json();
       })
       .then((data) => {
@@ -160,8 +155,9 @@ export default function BugDetailPage({ params }: { params: Promise<{ id: string
 
   if (isLoading) {
     return (
-      <div className="py-20 text-center text-zinc-500 text-sm animate-pulse">
-        Loading defect report {bugId}...
+      <div className="py-20 flex items-center justify-center text-slate-400 text-sm gap-2">
+        <RefreshCw className="w-4 h-4 animate-spin text-violet-600" />
+        <span>Loading defect report {bugId}...</span>
       </div>
     );
   }
@@ -169,10 +165,10 @@ export default function BugDetailPage({ params }: { params: Promise<{ id: string
   if (error || !bug) {
     return (
       <div className="py-12 max-w-xl mx-auto text-center space-y-4">
-        <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl">
+        <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-xl text-xs">
           {error || "Defect not found"}
         </div>
-        <Link href="/" className="inline-flex items-center gap-1.5 text-xs text-amber-500 hover:underline">
+        <Link href="/" className="inline-flex items-center gap-1.5 text-xs text-violet-600 hover:underline">
           <ArrowLeft className="w-3.5 h-3.5" /> Back to Defects List
         </Link>
       </div>
@@ -191,21 +187,21 @@ export default function BugDetailPage({ params }: { params: Promise<{ id: string
       <div className="flex items-center justify-between">
         <Link
           href="/"
-          className="inline-flex items-center gap-1.5 text-xs font-medium text-zinc-400 hover:text-zinc-200 transition"
+          className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-slate-800 transition"
         >
-          <ArrowLeft className="w-3.5 h-3.5" /> Back to Defects
+          <ArrowLeft className="w-3.5 h-3.5" /> Back to Defects List
         </Link>
 
         {/* Audit status badge */}
         <div className="flex items-center gap-2">
           {bug.auditVerification?.isValid ? (
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-mono">
-              <ShieldCheck className="w-3.5 h-3.5" />
+            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-mono">
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
               <span>SHA-256 Audit Chain Verified ({bug.auditVerification?.totalEntries} blocks)</span>
             </div>
           ) : (
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-mono">
-              <ShieldAlert className="w-3.5 h-3.5" />
+            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-50 border border-red-200 text-red-700 text-xs font-mono">
+              <ShieldAlert className="w-3.5 h-3.5 text-red-600" />
               <span>Audit Chain Integrity Warning</span>
             </div>
           )}
@@ -217,9 +213,9 @@ export default function BugDetailPage({ params }: { params: Promise<{ id: string
         {/* Left 2 Cols: Main Defect Information, Status Controls, Comments */}
         <div className="lg:col-span-2 space-y-6">
           {/* Header Card */}
-          <div className="p-6 rounded-xl bg-zinc-900/60 border border-zinc-800 space-y-4">
+          <div className="p-6 rounded-xl bg-white border border-slate-200 shadow-sm space-y-4">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="font-mono text-sm font-bold text-amber-500 px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20">
+              <span className="font-mono text-xs font-bold text-violet-700 px-2 py-0.5 rounded bg-violet-50 border border-violet-200">
                 {bug.key}
               </span>
               <StatusBadge status={bug.status} resolution={bug.resolution} />
@@ -227,48 +223,48 @@ export default function BugDetailPage({ params }: { params: Promise<{ id: string
               <PriorityBadge priority={bug.priority} />
             </div>
 
-            <h1 className="text-xl font-bold text-zinc-100 leading-snug">{bug.title}</h1>
+            <h1 className="text-xl font-bold text-slate-900 leading-snug">{bug.title}</h1>
 
-            <div className="flex items-center gap-4 text-xs text-zinc-400 border-t border-zinc-800/80 pt-3">
+            <div className="flex items-center gap-4 text-xs text-slate-500 border-t border-slate-100 pt-3">
               <div className="flex items-center gap-1">
                 <span>Reported by</span>
-                <span className="text-zinc-200 font-medium">{bug.reporter?.name}</span>
+                <span className="text-slate-800 font-semibold">{bug.reporter?.name}</span>
               </div>
               <span>•</span>
               <div className="flex items-center gap-1">
-                <Clock className="w-3.5 h-3.5 text-zinc-500" />
+                <Clock className="w-3.5 h-3.5 text-slate-400" />
                 <span>{new Date(bug.createdAt).toLocaleString()}</span>
               </div>
             </div>
           </div>
 
           {/* Bugzilla Workflow Transition Panel */}
-          <div className="p-5 rounded-xl bg-zinc-900/40 border border-zinc-800 space-y-4">
+          <div className="p-5 rounded-xl bg-white border border-slate-200 shadow-sm space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Activity className="w-4 h-4 text-amber-500" />
-                <h3 className="text-xs font-bold text-zinc-200 uppercase tracking-wider">
+                <Activity className="w-4 h-4 text-violet-600" />
+                <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
                   Bugzilla Workflow Transition Engine
                 </h3>
               </div>
-              <span className="text-[11px] text-zinc-500 font-mono">Current: {bug.status}</span>
+              <span className="text-[11px] text-slate-500 font-mono">Current: {bug.status}</span>
             </div>
 
             {allowedNextStatuses.length === 0 ? (
-              <p className="text-xs text-zinc-400 italic">
+              <p className="text-xs text-slate-500 italic">
                 This bug is in a final closed state with no further direct transitions allowed.
               </p>
             ) : (
               <form onSubmit={handleStatusTransition} className="space-y-3">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[11px] font-medium text-zinc-400 mb-1">
+                    <label className="block text-[11px] font-medium text-slate-500 mb-1">
                       Transition Destination
                     </label>
                     <select
                       value={nextStatus}
                       onChange={(e) => setNextStatus(e.target.value)}
-                      className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-amber-500"
+                      className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20"
                     >
                       {allowedNextStatuses.map((st) => (
                         <option key={st} value={st}>
@@ -280,13 +276,13 @@ export default function BugDetailPage({ params }: { params: Promise<{ id: string
 
                   {nextStatus === "RESOLVED" && (
                     <div>
-                      <label className="block text-[11px] font-medium text-zinc-400 mb-1">
-                        Bugzilla Resolution <span className="text-red-400">*</span>
+                      <label className="block text-[11px] font-medium text-slate-500 mb-1">
+                        Bugzilla Resolution <span className="text-red-500">*</span>
                       </label>
                       <select
                         value={resolution}
                         onChange={(e) => setResolution(e.target.value)}
-                        className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-emerald-400 font-medium focus:outline-none focus:border-emerald-500"
+                        className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-emerald-700 font-semibold focus:outline-none focus:border-emerald-500"
                       >
                         {BUG_RESOLUTIONS.map((res) => (
                           <option key={res} value={res}>
@@ -304,7 +300,7 @@ export default function BugDetailPage({ params }: { params: Promise<{ id: string
                     placeholder="Optional transition reason / commit hash / notes..."
                     value={transitionComment}
                     onChange={(e) => setTransitionComment(e.target.value)}
-                    className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-1.5 text-xs text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-amber-500"
+                    className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20"
                   />
                 </div>
 
@@ -312,7 +308,7 @@ export default function BugDetailPage({ params }: { params: Promise<{ id: string
                   <button
                     type="submit"
                     disabled={isTransitioning}
-                    className="px-3.5 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-semibold transition disabled:opacity-50 flex items-center gap-1.5 shadow-md shadow-amber-500/10"
+                    className="px-3.5 py-1.5 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-xs font-semibold transition disabled:opacity-50 flex items-center gap-1.5 shadow-sm"
                   >
                     {isTransitioning ? "Applying..." : `Execute Transition -> ${nextStatus}`}
                   </button>
@@ -322,11 +318,11 @@ export default function BugDetailPage({ params }: { params: Promise<{ id: string
           </div>
 
           {/* Description Section */}
-          <div className="p-6 rounded-xl bg-zinc-900/60 border border-zinc-800 space-y-3">
-            <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-wider">
+          <div className="p-6 rounded-xl bg-white border border-slate-200 shadow-sm space-y-3">
+            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider">
               Description & Reproduction Steps
             </h3>
-            <div className="p-4 rounded-lg bg-zinc-950 border border-zinc-800/80 font-mono text-xs text-zinc-300 whitespace-pre-wrap leading-relaxed">
+            <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 font-mono text-xs text-slate-700 whitespace-pre-wrap leading-relaxed">
               {bug.description}
             </div>
           </div>
@@ -334,14 +330,14 @@ export default function BugDetailPage({ params }: { params: Promise<{ id: string
           {/* Tabbed Activity / Comments & Cryptographic Audit Trail */}
           <div className="space-y-4">
             {/* Tabs Header */}
-            <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-2">
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setActiveTab("comments")}
                   className={`px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center gap-1.5 ${
                     activeTab === "comments"
-                      ? "bg-zinc-800 text-zinc-100 border border-zinc-700"
-                      : "text-zinc-400 hover:text-zinc-200"
+                      ? "bg-violet-50 text-violet-700 border border-violet-200"
+                      : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
                   }`}
                 >
                   <Activity className="w-3.5 h-3.5" />
@@ -352,11 +348,11 @@ export default function BugDetailPage({ params }: { params: Promise<{ id: string
                   onClick={() => setActiveTab("audit")}
                   className={`px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center gap-1.5 ${
                     activeTab === "audit"
-                      ? "bg-zinc-800 text-zinc-100 border border-zinc-700"
-                      : "text-zinc-400 hover:text-zinc-200"
+                      ? "bg-violet-50 text-violet-700 border border-violet-200"
+                      : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
                   }`}
                 >
-                  <Hash className="w-3.5 h-3.5 text-amber-500" />
+                  <Hash className="w-3.5 h-3.5 text-violet-600" />
                   <span>Cryptographic Audit Log ({bug.auditLogs?.length || 0})</span>
                 </button>
               </div>
@@ -367,27 +363,27 @@ export default function BugDetailPage({ params }: { params: Promise<{ id: string
               <div className="space-y-4">
                 <div className="space-y-3">
                   {bug.comments?.length === 0 ? (
-                    <div className="p-6 text-center text-xs text-zinc-500 border border-dashed border-zinc-800 rounded-xl">
+                    <div className="p-6 text-center text-xs text-slate-400 border border-dashed border-slate-200 rounded-xl">
                       No comments posted yet.
                     </div>
                   ) : (
                     bug.comments.map((c: any, idx: number) => (
                       <div
                         key={c.id}
-                        className="p-4 rounded-xl bg-zinc-900/50 border border-zinc-800/80 space-y-2"
+                        className="p-4 rounded-xl bg-white border border-slate-200 shadow-xs space-y-2"
                       >
                         <div className="flex items-center justify-between text-xs">
                           <div className="flex items-center gap-2">
-                            <span className="font-semibold text-zinc-200">{c.author?.name}</span>
-                            <span className="text-[10px] px-1.5 py-0.2 rounded bg-zinc-800 text-zinc-400 font-mono">
+                            <span className="font-semibold text-slate-800">{c.author?.name}</span>
+                            <span className="text-[10px] px-1.5 py-0.2 rounded bg-slate-100 text-slate-500 font-mono">
                               Comment #{idx + 1}
                             </span>
                           </div>
-                          <span className="text-[11px] text-zinc-500">
+                          <span className="text-[11px] text-slate-400">
                             {new Date(c.createdAt).toLocaleString()}
                           </span>
                         </div>
-                        <p className="text-xs text-zinc-300 whitespace-pre-wrap leading-relaxed">
+                        <p className="text-xs text-slate-700 whitespace-pre-wrap leading-relaxed">
                           {c.body}
                         </p>
                       </div>
@@ -402,16 +398,16 @@ export default function BugDetailPage({ params }: { params: Promise<{ id: string
                     placeholder="Add a comment or triage note..."
                     value={commentText}
                     onChange={(e) => setCommentText(e.target.value)}
-                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-xs text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-amber-500 transition"
+                    className="w-full bg-white border border-slate-200 rounded-xl p-3 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition"
                   />
                   <div className="flex justify-between items-center">
-                    <span className="text-[11px] text-zinc-500">
-                      Posting as: <strong className="text-zinc-300">{currentUser?.name}</strong>
+                    <span className="text-[11px] text-slate-500">
+                      Posting as: <strong className="text-slate-800">{currentUser?.name}</strong>
                     </span>
                     <button
                       type="submit"
                       disabled={isPostingComment || !commentText.trim()}
-                      className="px-3.5 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-100 text-xs font-medium transition disabled:opacity-50 flex items-center gap-1.5"
+                      className="px-3.5 py-1.5 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-xs font-semibold transition disabled:opacity-50 flex items-center gap-1.5 shadow-sm"
                     >
                       <Send className="w-3 h-3" />
                       <span>{isPostingComment ? "Posting..." : "Post Comment"}</span>
@@ -424,42 +420,42 @@ export default function BugDetailPage({ params }: { params: Promise<{ id: string
             {/* Tab 2: SHA-256 Tamper-Evident Audit Trail */}
             {activeTab === "audit" && (
               <div className="space-y-3">
-                <div className="p-3 bg-amber-500/5 border border-amber-500/20 rounded-lg text-xs text-amber-300">
+                <div className="p-3 bg-violet-50 border border-violet-200 rounded-lg text-xs text-violet-800">
                   <strong>Tamper-Evident Hash Chaining:</strong> Each mutation creates a block linked to
-                  the previous block's SHA-256 digest. Any direct database tampering breaks the cryptographic hash.
+                  the previous block's SHA-256 digest. Any direct database tampering breaks the cryptographic hash chain.
                 </div>
 
                 <div className="space-y-2">
-                  {bug.auditLogs?.map((log: any, index: number) => (
+                  {bug.auditLogs?.map((log: any) => (
                     <div
                       key={log.id}
-                      className="p-3.5 rounded-lg bg-zinc-950 border border-zinc-800/80 space-y-2 font-mono text-[11px]"
+                      className="p-3.5 rounded-lg bg-slate-50 border border-slate-200 space-y-2 font-mono text-[11px]"
                     >
                       <div className="flex items-center justify-between">
-                        <span className="font-bold text-amber-400">
+                        <span className="font-bold text-violet-700">
                           [{log.action}] {log.fieldChanged ? `${log.fieldChanged} modified` : ""}
                         </span>
-                        <span className="text-zinc-500 text-[10px]">
+                        <span className="text-slate-400 text-[10px]">
                           {new Date(log.createdAt).toISOString()}
                         </span>
                       </div>
 
-                      <div className="text-zinc-300">
-                        Actor: <span className="text-zinc-100">{log.actor?.name}</span>
+                      <div className="text-slate-700">
+                        Actor: <span className="text-slate-900 font-semibold">{log.actor?.name}</span>
                         {log.oldValue && (
-                          <span className="text-zinc-500"> | Old: "{log.oldValue}"</span>
+                          <span className="text-slate-500"> | Old: "{log.oldValue}"</span>
                         )}
                         {log.newValue && (
-                          <span className="text-emerald-400"> | New: "{log.newValue}"</span>
+                          <span className="text-emerald-600 font-semibold"> | New: "{log.newValue}"</span>
                         )}
                       </div>
 
-                      <div className="pt-1.5 border-t border-zinc-900 text-[10px] text-zinc-500 space-y-0.5 overflow-x-auto">
+                      <div className="pt-1.5 border-t border-slate-200 text-[10px] text-slate-500 space-y-0.5 overflow-x-auto">
                         <div>
-                          prev_hash: <span className="text-zinc-400">{log.prevHash?.slice(0, 32)}...</span>
+                          prev_hash: <span className="text-slate-600">{log.prevHash?.slice(0, 32)}...</span>
                         </div>
                         <div>
-                          block_hash: <span className="text-amber-500/90">{log.hash}</span>
+                          block_hash: <span className="text-violet-700 font-semibold">{log.hash}</span>
                         </div>
                       </div>
                     </div>
@@ -473,38 +469,38 @@ export default function BugDetailPage({ params }: { params: Promise<{ id: string
         {/* Right 1 Col: Metadata Sidebar */}
         <div className="space-y-5">
           {/* Defect Hierarchy */}
-          <div className="p-5 rounded-xl bg-zinc-900/60 border border-zinc-800 space-y-4">
-            <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
-              <Layers className="w-3.5 h-3.5 text-zinc-400" />
+          <div className="p-5 rounded-xl bg-white border border-slate-200 shadow-sm space-y-4">
+            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+              <Layers className="w-3.5 h-3.5 text-slate-400" />
               <span>Hierarchy</span>
             </h3>
 
             <div className="space-y-3 text-xs">
               <div>
-                <span className="text-zinc-500 block text-[11px]">Product</span>
-                <span className="font-semibold text-zinc-200">{bug.product?.name}</span>
+                <span className="text-slate-400 block text-[11px]">Product</span>
+                <span className="font-semibold text-slate-800">{bug.product?.name}</span>
               </div>
               <div>
-                <span className="text-zinc-500 block text-[11px]">Component</span>
-                <span className="font-semibold text-zinc-200">{bug.component?.name}</span>
+                <span className="text-slate-400 block text-[11px]">Component</span>
+                <span className="font-semibold text-slate-800">{bug.component?.name}</span>
               </div>
             </div>
           </div>
 
           {/* People & Assignment */}
-          <div className="p-5 rounded-xl bg-zinc-900/60 border border-zinc-800 space-y-4">
-            <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
-              <User className="w-3.5 h-3.5 text-zinc-400" />
+          <div className="p-5 rounded-xl bg-white border border-slate-200 shadow-sm space-y-4">
+            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+              <User className="w-3.5 h-3.5 text-slate-400" />
               <span>Assignment</span>
             </h3>
 
             <div className="space-y-3 text-xs">
               <div>
-                <span className="text-zinc-500 block text-[11px] mb-1">Assignee</span>
+                <span className="text-slate-400 block text-[11px] mb-1">Assignee</span>
                 <select
                   value={bug.assigneeId || ""}
                   onChange={(e) => handleQuickAssign(e.target.value)}
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-xs text-zinc-200 focus:outline-none focus:border-amber-500"
+                  className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20"
                 >
                   <option value="">(Unassigned)</option>
                   {users.map((u) => (
@@ -516,27 +512,27 @@ export default function BugDetailPage({ params }: { params: Promise<{ id: string
               </div>
 
               <div>
-                <span className="text-zinc-500 block text-[11px]">Reporter</span>
-                <span className="text-zinc-300 font-medium">{bug.reporter?.name}</span>
+                <span className="text-slate-400 block text-[11px]">Reporter</span>
+                <span className="text-slate-800 font-semibold">{bug.reporter?.name}</span>
               </div>
             </div>
           </div>
 
           {/* Custom Fields (JSONB) */}
-          <div className="p-5 rounded-xl bg-zinc-900/60 border border-zinc-800 space-y-4">
-            <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
-              <FileCode className="w-3.5 h-3.5 text-zinc-400" />
+          <div className="p-5 rounded-xl bg-white border border-slate-200 shadow-sm space-y-4">
+            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+              <FileCode className="w-3.5 h-3.5 text-slate-400" />
               <span>Custom Fields (JSONB)</span>
             </h3>
 
             <div className="space-y-2 text-xs">
               {Object.keys(customFieldsObj).length === 0 ? (
-                <span className="text-zinc-500 text-[11px] italic">No custom fields attached.</span>
+                <span className="text-slate-400 text-[11px] italic">No custom fields attached.</span>
               ) : (
                 Object.entries(customFieldsObj).map(([k, v]) => (
-                  <div key={k} className="p-2 rounded bg-zinc-950 border border-zinc-800/80">
-                    <span className="text-[10px] text-zinc-500 block font-mono uppercase">{k}</span>
-                    <span className="text-zinc-200 font-mono text-[11px]">{String(v)}</span>
+                  <div key={k} className="p-2.5 rounded-lg bg-slate-50 border border-slate-200">
+                    <span className="text-[10px] text-slate-400 block font-mono uppercase">{k}</span>
+                    <span className="text-slate-800 font-mono text-[11px] font-medium">{String(v)}</span>
                   </div>
                 ))
               )}

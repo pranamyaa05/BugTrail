@@ -1,35 +1,42 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useUser } from "./user-context";
 import { CreateBugModal } from "./create-bug-modal";
-import { Bug, Plus, LayoutGrid, ListFilter, UserCheck, ShieldCheck } from "lucide-react";
+import { CommandPalette } from "./command-palette";
+import { Bug, Plus, LayoutGrid, ListFilter, Search, Command } from "lucide-react";
 
 export function Navbar() {
   const pathname = usePathname();
   const { currentUser, users, setCurrentUser } = useUser();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isCmdKOpen, setIsCmdKOpen] = useState(false);
+
+  useEffect(() => {
+    const handleOpenCmdK = () => setIsCmdKOpen(true);
+    window.addEventListener("open-command-palette", handleOpenCmdK);
+    return () => window.removeEventListener("open-command-palette", handleOpenCmdK);
+  }, []);
 
   return (
     <>
-      <header className="sticky top-0 z-40 w-full border-b border-zinc-800/80 bg-zinc-950/80 backdrop-blur-md">
+      <header className="sticky top-0 z-40 w-full border-b border-slate-200 bg-white/90 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
           {/* Brand */}
           <div className="flex items-center gap-6">
             <Link href="/" className="flex items-center gap-2.5 group">
-              <div className="p-2 rounded-lg bg-gradient-to-br from-amber-500 to-amber-600 text-zinc-950 font-black shadow-lg shadow-amber-500/20 group-hover:scale-105 transition transform">
+              <div className="p-2 rounded-lg bg-gradient-to-br from-violet-500 to-violet-600 text-white font-black shadow-sm group-hover:scale-105 transition transform">
                 <Bug className="w-5 h-5" />
               </div>
               <div className="flex flex-col">
                 <div className="flex items-center gap-1.5">
-                  <span className="font-bold text-base tracking-tight text-zinc-100">BugTrail</span>
-                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 font-mono font-medium">
+                  <span className="font-bold text-base tracking-tight text-slate-800">BugTrail</span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-violet-100 text-violet-700 font-mono font-medium">
                     v2.0
                   </span>
                 </div>
-                <span className="text-[10px] text-zinc-400 font-mono">Modernized Defect Tracker</span>
               </div>
             </Link>
 
@@ -39,8 +46,8 @@ export function Navbar() {
                 href="/"
                 className={`px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center gap-1.5 ${
                   pathname === "/"
-                    ? "bg-zinc-800/80 text-zinc-100 border border-zinc-700/60"
-                    : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900"
+                    ? "bg-violet-50 text-violet-700 border border-violet-200"
+                    : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
                 }`}
               >
                 <ListFilter className="w-3.5 h-3.5" />
@@ -50,8 +57,8 @@ export function Navbar() {
                 href="/kanban"
                 className={`px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center gap-1.5 ${
                   pathname === "/kanban"
-                    ? "bg-zinc-800/80 text-zinc-100 border border-zinc-700/60"
-                    : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900"
+                    ? "bg-violet-50 text-violet-700 border border-violet-200"
+                    : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
                 }`}
               >
                 <LayoutGrid className="w-3.5 h-3.5" />
@@ -60,23 +67,36 @@ export function Navbar() {
             </nav>
           </div>
 
-          {/* Right actions: Create bug + Persona switcher */}
+          {/* Right actions: Cmd+K search button + File Bug + Persona switcher */}
           <div className="flex items-center gap-3">
+            {/* Cmd+K trigger button */}
+            <button
+              onClick={() => setIsCmdKOpen(true)}
+              className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-400 hover:text-slate-600 text-xs transition"
+              title="Search or type command (Cmd+K)"
+            >
+              <Search className="w-3.5 h-3.5" />
+              <span>Search defects...</span>
+              <kbd className="font-mono text-[10px] bg-white border border-slate-200 rounded px-1.5 py-0.5 text-slate-500 flex items-center gap-0.5">
+                <Command className="w-2.5 h-2.5" /> K
+              </kbd>
+            </button>
+
             <button
               onClick={() => setIsCreateOpen(true)}
-              className="px-3.5 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-zinc-950 font-semibold text-xs transition flex items-center gap-1.5 shadow-md shadow-amber-500/10"
+              className="px-3.5 py-1.5 rounded-lg bg-violet-600 hover:bg-violet-700 text-white font-semibold text-xs transition flex items-center gap-1.5 shadow-sm"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>File Bug</span>
             </button>
 
             {/* Persona Switcher for Quick Demo */}
-            <div className="relative flex items-center gap-2 pl-3 border-l border-zinc-800">
+            <div className="relative flex items-center gap-2 pl-3 border-l border-slate-200">
               <div className="hidden lg:flex flex-col text-right">
-                <span className="text-[11px] font-medium text-zinc-200 leading-tight">
+                <span className="text-[11px] font-medium text-slate-800 leading-tight">
                   {currentUser?.name || "Loading..."}
                 </span>
-                <span className="text-[10px] text-amber-400/90 font-mono">
+                <span className="text-[10px] text-slate-500 font-mono">
                   {currentUser?.role || "ROLE"}
                 </span>
               </div>
@@ -87,7 +107,7 @@ export function Navbar() {
                   const u = users.find((item) => item.id === e.target.value);
                   if (u) setCurrentUser(u);
                 }}
-                className="bg-zinc-900 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-xs text-zinc-300 focus:outline-none focus:border-amber-500 cursor-pointer"
+                className="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 cursor-pointer"
                 title="Switch User Persona (Demo)"
               >
                 {users.map((u) => (
@@ -105,9 +125,13 @@ export function Navbar() {
         isOpen={isCreateOpen}
         onClose={() => setIsCreateOpen(false)}
         onSuccess={() => {
-          // Trigger page reload / state refresh
           window.location.reload();
         }}
+      />
+
+      <CommandPalette
+        isOpen={isCmdKOpen}
+        onClose={() => setIsCmdKOpen(false)}
       />
     </>
   );
