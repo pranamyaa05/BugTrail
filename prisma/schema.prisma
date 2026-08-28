@@ -1,0 +1,104 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id           String     @id @default(cuid())
+  email        String     @unique
+  name         String
+  role         String     @default("DEVELOPER")
+  avatarUrl    String?
+  createdAt    DateTime   @default(now())
+  
+  reportedBugs Bug[]      @relation("ReportedBugs")
+  assignedBugs Bug[]      @relation("AssignedBugs")
+  comments     Comment[]
+  auditLogs    AuditLog[]
+}
+
+model Product {
+  id          String      @id @default(cuid())
+  name        String      @unique
+  description String?
+  createdAt   DateTime    @default(now())
+  
+  components  Component[]
+  bugs        Bug[]
+}
+
+model Component {
+  id          String   @id @default(cuid())
+  productId   String
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  bugs        Bug[]
+
+  @@unique([productId, name])
+}
+
+model Bug {
+  id              String      @id @default(cuid())
+  bugNumber       Int         @unique
+  key             String      @unique
+  title           String
+  description     String
+  status          String      @default("NEW")
+  resolution      String?
+  severity        String      @default("NORMAL")
+  priority        String      @default("P3")
+  
+  productId       String
+  componentId     String
+  reporterId      String
+  assigneeId      String?
+  
+  customFields    String?     @default("{}")
+  duplicateOfId   String?
+  
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  resolvedAt      DateTime?
+
+  product         Product     @relation(fields: [productId], references: [id])
+  component       Component   @relation(fields: [componentId], references: [id])
+  reporter        User        @relation("ReportedBugs", fields: [reporterId], references: [id])
+  assignee        User?       @relation("AssignedBugs", fields: [assigneeId], references: [id])
+  
+  comments        Comment[]
+  auditLogs       AuditLog[]
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  bugId     String
+  authorId  String
+  body      String
+  createdAt DateTime @default(now())
+
+  bug       Bug      @relation(fields: [bugId], references: [id], onDelete: Cascade)
+  author    User     @relation(fields: [authorId], references: [id])
+}
+
+model AuditLog {
+  id           String   @id @default(cuid())
+  bugId        String
+  actorId      String
+  action       String
+  fieldChanged String?
+  oldValue     String?
+  newValue     String?
+  prevHash     String?
+  hash         String?
+  createdAt    DateTime @default(now())
+
+  bug          Bug      @relation(fields: [bugId], references: [id], onDelete: Cascade)
+  actor        User     @relation(fields: [actorId], references: [id])
+}
