@@ -5,6 +5,7 @@ import Link from "next/link";
 import { StatusBadge } from "@/components/status-badge";
 import { SeverityBadge, PriorityBadge } from "@/components/severity-badge";
 import { BUG_STATUSES, BUG_SEVERITIES } from "@/lib/workflow";
+import { SavedQueries } from "@/components/saved-queries";
 import { Search, Bug, CheckCircle2, AlertTriangle, Flame, MessageSquare, RefreshCw } from "lucide-react";
 
 export default function DashboardPage() {
@@ -40,6 +41,12 @@ export default function DashboardPage() {
 
   useEffect(() => {
     fetchDashboardData();
+
+    const eventSource = new EventSource("/api/events");
+    eventSource.onmessage = () => {
+      fetchDashboardData();
+    };
+    return () => eventSource.close();
   }, []);
 
   const filteredBugs = bugs.filter((bug) => {
@@ -124,6 +131,17 @@ export default function DashboardPage() {
         </div>
 
         <div className="flex items-center gap-2 w-full md:w-auto">
+          <SavedQueries 
+            currentFilters={{
+              searchQuery, selectedProduct, selectedStatus, selectedSeverity
+            }}
+            onLoadQuery={(filters) => {
+              setSearchQuery(filters.searchQuery || "");
+              setSelectedProduct(filters.selectedProduct || "");
+              setSelectedStatus(filters.selectedStatus || "");
+              setSelectedSeverity(filters.selectedSeverity || "");
+            }}
+          />
           <select
             value={selectedProduct}
             onChange={(e) => setSelectedProduct(e.target.value)}

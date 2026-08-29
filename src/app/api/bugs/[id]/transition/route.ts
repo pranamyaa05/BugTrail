@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { validateStatusTransition, BugStatus, BugResolution } from "@/lib/workflow";
 import { recordAuditLog } from "@/lib/audit";
+import { bugTrailEvents } from "@/lib/events";
 
 export async function POST(
   req: NextRequest,
@@ -105,6 +106,8 @@ export async function POST(
         newValue: "Added status transition comment",
       });
     }
+
+    bugTrailEvents.emit("event", { type: "STATUS_CHANGED", payload: updatedBug });
 
     return NextResponse.json({
       success: true,

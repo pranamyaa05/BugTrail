@@ -8,27 +8,32 @@ generator client {
 }
 
 model User {
-  id           String     @id @default(cuid())
-  email        String     @unique
-  name         String
-  role         String     @default("DEVELOPER")
-  avatarUrl    String?
-  createdAt    DateTime   @default(now())
-  
-  reportedBugs Bug[]      @relation("ReportedBugs")
-  assignedBugs Bug[]      @relation("AssignedBugs")
-  comments     Comment[]
-  auditLogs    AuditLog[]
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  role      String   @default("DEVELOPER")
+  avatarUrl String?
+  createdAt DateTime @default(now())
+
+  reportedBugs   Bug[]        @relation("ReportedBugs")
+  assignedBugs   Bug[]        @relation("AssignedBugs")
+  comments       Comment[]
+  auditLogs      AuditLog[]
+  ccList         BugCC[]
+  flagsSet       Flag[]       @relation("FlagSetters")
+  flagsRequested Flag[]       @relation("FlagRequestees")
+  attachments    Attachment[]
+  savedQueries   SavedQuery[]
 }
 
 model Product {
-  id          String      @id @default(cuid())
-  name        String      @unique
+  id          String   @id @default(cuid())
+  name        String   @unique
   description String?
-  createdAt   DateTime    @default(now())
-  
-  components  Component[]
-  bugs        Bug[]
+  createdAt   DateTime @default(now())
+
+  components Component[]
+  bugs       Bug[]
 }
 
 model Component {
@@ -37,43 +42,46 @@ model Component {
   name        String
   description String?
   createdAt   DateTime @default(now())
-  
-  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  bugs        Bug[]
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  bugs    Bug[]
 
   @@unique([productId, name])
 }
 
 model Bug {
-  id              String      @id @default(cuid())
-  bugNumber       Int         @unique
-  key             String      @unique
-  title           String
-  description     String
-  status          String      @default("NEW")
-  resolution      String?
-  severity        String      @default("NORMAL")
-  priority        String      @default("P3")
-  
-  productId       String
-  componentId     String
-  reporterId      String
-  assigneeId      String?
-  
-  customFields    String?     @default("{}")
-  duplicateOfId   String?
-  
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
-  resolvedAt      DateTime?
+  id          String  @id @default(cuid())
+  bugNumber   Int     @unique
+  key         String  @unique
+  title       String
+  description String
+  status      String  @default("NEW")
+  resolution  String?
+  severity    String  @default("NORMAL")
+  priority    String  @default("P3")
 
-  product         Product     @relation(fields: [productId], references: [id])
-  component       Component   @relation(fields: [componentId], references: [id])
-  reporter        User        @relation("ReportedBugs", fields: [reporterId], references: [id])
-  assignee        User?       @relation("AssignedBugs", fields: [assigneeId], references: [id])
-  
-  comments        Comment[]
-  auditLogs       AuditLog[]
+  productId   String
+  componentId String
+  reporterId  String
+  assigneeId  String?
+
+  customFields  String? @default("{}")
+  duplicateOfId String?
+
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  resolvedAt DateTime?
+
+  product   Product   @relation(fields: [productId], references: [id])
+  component Component @relation(fields: [componentId], references: [id])
+  reporter  User      @relation("ReportedBugs", fields: [reporterId], references: [id])
+  assignee  User?     @relation("AssignedBugs", fields: [assigneeId], references: [id])
+
+  comments    Comment[]
+  auditLogs   AuditLog[]
+  ccList      BugCC[]
+  flags       Flag[]
+  attachments Attachment[]
 }
 
 model Comment {
@@ -83,8 +91,8 @@ model Comment {
   body      String
   createdAt DateTime @default(now())
 
-  bug       Bug      @relation(fields: [bugId], references: [id], onDelete: Cascade)
-  author    User     @relation(fields: [authorId], references: [id])
+  bug    Bug  @relation(fields: [bugId], references: [id], onDelete: Cascade)
+  author User @relation(fields: [authorId], references: [id])
 }
 
 model AuditLog {
@@ -99,6 +107,70 @@ model AuditLog {
   hash         String?
   createdAt    DateTime @default(now())
 
-  bug          Bug      @relation(fields: [bugId], references: [id], onDelete: Cascade)
-  actor        User     @relation(fields: [actorId], references: [id])
+  bug   Bug  @relation(fields: [bugId], references: [id], onDelete: Cascade)
+  actor User @relation(fields: [actorId], references: [id])
+}
+
+model BugCC {
+  id        String   @id @default(cuid())
+  bugId     String
+  userId    String
+  createdAt DateTime @default(now())
+
+  bug  Bug  @relation(fields: [bugId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([bugId, userId])
+}
+
+model Flag {
+  id          String   @id @default(cuid())
+  bugId       String
+  setterId    String
+  requesteeId String?
+  name        String // "review", "needinfo", "approval"
+  status      String // "?", "+", "-"
+  createdAt   DateTime @default(now())
+
+  bug       Bug   @relation(fields: [bugId], references: [id], onDelete: Cascade)
+  setter    User  @relation("FlagSetters", fields: [setterId], references: [id])
+  requestee User? @relation("FlagRequestees", fields: [requesteeId], references: [id])
+}
+
+model Attachment {
+  id         String   @id @default(cuid())
+  bugId      String
+  uploaderId String
+  filename   String
+  fileUrl    String
+  fileSize   Int
+  isPatch    Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  bug      Bug  @relation(fields: [bugId], references: [id], onDelete: Cascade)
+  uploader User @relation(fields: [uploaderId], references: [id])
+}
+
+model SavedQuery {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  queryJson String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model WhiningRule {
+  id            String   @id @default(cuid())
+  name          String
+  description   String?
+  statuses      String   // Comma-separated statuses to watch, e.g. "NEW,UNCONFIRMED"
+  staleDays     Int      @default(3)
+  severities    String?  // Comma-separated severities filter, e.g. "BLOCKER,CRITICAL"
+  isActive      Boolean  @default(true)
+  lastRunAt     DateTime?
+  lastRunCount  Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }
