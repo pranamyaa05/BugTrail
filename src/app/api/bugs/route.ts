@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { recordAuditLog } from "@/lib/audit";
 import { BUG_STATUSES, BUG_SEVERITIES, BUG_PRIORITIES } from "@/lib/workflow";
+import { bugTrailEvents } from "@/lib/events";
 
 export async function GET(req: NextRequest) {
   try {
@@ -130,6 +131,8 @@ export async function POST(req: NextRequest) {
       action: "CREATE",
       newValue: `Bug filed with status ${newBug.status}, priority ${newBug.priority}, severity ${newBug.severity}`,
     });
+
+    bugTrailEvents.emit("event", { type: "BUG_CREATED", payload: newBug });
 
     return NextResponse.json(newBug, { status: 201 });
   } catch (error: any) {

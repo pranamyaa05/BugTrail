@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { recordAuditLog } from "@/lib/audit";
+import { bugTrailEvents } from "@/lib/events";
 
 export async function POST(
   req: NextRequest,
@@ -43,6 +44,17 @@ export async function POST(
       action: "COMMENT",
       newValue: `Added comment #${comment.id}`,
     });
+
+    bugTrailEvents.emit("event", { type: "COMMENT_ADDED", payload: comment });
+
+    // Check for @mentions
+    const mentions = commentBody.match(/@(\w+)/g);
+    if (mentions) {
+      const uniqueMentions = Array.from(new Set(mentions.map((m: string) => m.substring(1))));
+      uniqueMentions.forEach((username) => {
+        bugTrailEvents.emit("event", { type: "MENTION", payload: { bugId: bug.key, username, authorName: comment.author?.name || "Someone" } });
+      });
+    }
 
     return NextResponse.json(comment, { status: 201 });
   } catch (error: any) {

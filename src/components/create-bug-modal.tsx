@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useUser } from "./user-context";
 import { BUG_SEVERITIES, BUG_PRIORITIES } from "@/lib/workflow";
-import { X, Plus, AlertCircle } from "lucide-react";
+import { X, Plus, AlertCircle, Sparkles, RefreshCw } from "lucide-react";
 
 interface ComponentItem {
   id: string;
@@ -37,6 +37,12 @@ export function CreateBugModal({ isOpen, onClose, onSuccess }: CreateBugModalPro
   const [buildVersion, setBuildVersion] = useState("Nightly 2026.08");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // AI State
+  const [isTriaging, setIsTriaging] = useState(false);
+  const [aiRationale, setAiRationale] = useState<string | null>(null);
+  const [duplicates, setDuplicates] = useState<any[]>([]);
+  const [isCheckingDedup, setIsCheckingDedup] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -62,6 +68,57 @@ export function CreateBugModal({ isOpen, onClose, onSuccess }: CreateBugModalPro
       setSelectedComponentId(prod.components[0].id);
     } else {
       setSelectedComponentId("");
+    }
+  };
+
+  useEffect(() => {
+    if (!title.trim() && !description.trim()) {
+      setDuplicates([]);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      setIsCheckingDedup(true);
+      try {
+        const res = await fetch("/api/ai/dedup", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title, description }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setDuplicates(data.duplicates || []);
+        }
+      } catch (err) {
+        // ignore
+      } finally {
+        setIsCheckingDedup(false);
+      }
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [title, description]);
+
+  const handleSuggestTriage = async () => {
+    if (!title || !description) {
+      alert("Please enter title and description first.");
+      return;
+    }
+    setIsTriaging(true);
+    try {
+      const res = await fetch("/api/ai/triage", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title, description }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setSeverity(data.severity);
+        setPriority(data.priority);
+        setAiRationale(data.rationale);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsTriaging(false);
     }
   };
 
@@ -220,6 +277,59 @@ export function CreateBugModal({ isOpen, onClose, onSuccess }: CreateBugModalPro
               className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition font-mono text-xs"
             />
           </div>
+
+          {/* AI Dedup Banner */}
+          {isCheckingDedup && (
+             <div className="flex items-center gap-2 text-xs text-slate-500 italic">
+               <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+               Checking for potential duplicates...
+             </div>
+          )}
+          {duplicates.length > 0 && (
+            <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg space-y-2">
+              <div className="flex items-center gap-1.5 text-amber-800 text-xs font-bold">
+                <AlertCircle className="w-4 h-4" />
+                <span>Potential Duplicates Found</span>
+              </div>
+              <ul className="space-y-1">
+                {duplicates.map((d: any) => (
+                  <li key={d.id} className="text-xs text-amber-900 flex justify-between">
+                    <a href={`/bugs/${d.key}`} target="_blank" rel="noreferrer" className="hover:underline line-clamp-1">
+                      <strong>{d.key}</strong>: {d.title}
+                    </a>
+                    <span className="shrink-0 text-amber-700 font-mono ml-2">
+                      {d.similarity}% match
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* AI Auto-Triage Action */}
+          <div className="flex items-center justify-between pt-2">
+            <h4 className="text-xs font-semibold text-slate-800">Triage Details</h4>
+            <button
+              type="button"
+              onClick={handleSuggestTriage}
+              disabled={isTriaging || !title || !description}
+              className="px-2.5 py-1.5 rounded bg-violet-50 text-violet-700 hover:bg-violet-100 border border-violet-200 text-[11px] font-medium transition flex items-center gap-1.5 disabled:opacity-50"
+            >
+              {isTriaging ? (
+                <RefreshCw className="w-3 h-3 animate-spin" />
+              ) : (
+                <Sparkles className="w-3 h-3" />
+              )}
+              <span>Auto-Suggest Triage</span>
+            </button>
+          </div>
+
+          {aiRationale && (
+            <div className="p-3 bg-violet-50/50 border border-violet-100 rounded-lg text-[11px] text-violet-800 font-medium">
+              <span className="font-bold mr-1">AI Triage Rationale:</span>
+              {aiRationale}
+            </div>
+          )}
 
           {/* Severity, Priority, Assignee */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

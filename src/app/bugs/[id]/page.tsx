@@ -21,10 +21,13 @@ import {
   User,
   Layers,
   FileCode,
+  RefreshCw,
   Activity,
   Hash,
-  RefreshCw,
+  Flag,
 } from "lucide-react";
+import { MarkdownRenderer } from "@/components/markdown-renderer";
+import { FlagMatrix } from "@/components/flag-matrix";
 
 export default function BugDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
@@ -47,7 +50,7 @@ export default function BugDetailPage({ params }: { params: Promise<{ id: string
   const [isPostingComment, setIsPostingComment] = useState(false);
 
   // Active tab: comments vs audit logs
-  const [activeTab, setActiveTab] = useState<"comments" | "audit">("comments");
+  const [activeTab, setActiveTab] = useState<"comments" | "audit" | "attachments">("comments");
 
   const loadBug = () => {
     fetch(`/api/bugs/${bugId}`)
@@ -66,6 +69,20 @@ export default function BugDetailPage({ params }: { params: Promise<{ id: string
 
   useEffect(() => {
     loadBug();
+
+    const eventSource = new EventSource("/api/events");
+    eventSource.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (
+          (data.payload && data.payload.id === bugId) ||
+          (data.payload && data.payload.bugId === bugId)
+        ) {
+          loadBug();
+        }
+      } catch (e) {}
+    };
+    return () => eventSource.close();
   }, [bugId]);
 
   const handleStatusTransition = async (e: React.FormEvent) => {
@@ -100,6 +117,25 @@ export default function BugDetailPage({ params }: { params: Promise<{ id: string
       alert(err.message);
     } finally {
       setIsTransitioning(false);
+    }
+  };
+
+  const handleToggleCC = async () => {
+    if (!currentUser) return;
+    const isCCd = bug.ccList?.some((cc: any) => cc.userId === currentUser.id);
+    try {
+      if (isCCd) {
+        await fetch(`/api/bugs/${bug.id}/cc?userId=${currentUser.id}`, { method: "DELETE" });
+      } else {
+        await fetch(`/api/bugs/${bug.id}/cc`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId: currentUser.id }),
+        });
+      }
+      loadBug();
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -322,8 +358,8 @@ export default function BugDetailPage({ params }: { params: Promise<{ id: string
             <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider">
               Description & Reproduction Steps
             </h3>
-            <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 font-mono text-xs text-slate-700 whitespace-pre-wrap leading-relaxed">
-              {bug.description}
+            <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-700 leading-relaxed overflow-x-auto">
+              <MarkdownRenderer content={bug.description} />
             </div>
           </div>
 
@@ -355,6 +391,18 @@ export default function BugDetailPage({ params }: { params: Promise<{ id: string
                   <Hash className="w-3.5 h-3.5 text-violet-600" />
                   <span>Cryptographic Audit Log ({bug.auditLogs?.length || 0})</span>
                 </button>
+
+                <button
+                  onClick={() => setActiveTab("attachments")}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center gap-1.5 ${
+                    activeTab === "attachments"
+                      ? "bg-violet-50 text-violet-700 border border-violet-200"
+                      : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
+                  }`}
+                >
+                  <FileCode className="w-3.5 h-3.5 text-violet-600" />
+                  <span>Attachments ({bug.attachments?.length || 0})</span>
+                </button>
               </div>
             </div>
 
@@ -383,9 +431,9 @@ export default function BugDetailPage({ params }: { params: Promise<{ id: string
                             {new Date(c.createdAt).toLocaleString()}
                           </span>
                         </div>
-                        <p className="text-xs text-slate-700 whitespace-pre-wrap leading-relaxed">
-                          {c.body}
-                        </p>
+                        <div className="text-xs text-slate-700 leading-relaxed overflow-x-auto">
+                          <MarkdownRenderer content={c.body} />
+                        </div>
                       </div>
                     ))
                   )}
@@ -463,6 +511,59 @@ export default function BugDetailPage({ params }: { params: Promise<{ id: string
                 </div>
               </div>
             )}
+
+            {/* Tab 3: Attachments */}
+            {activeTab === "attachments" && (
+              <div className="p-5 animate-in fade-in duration-200 space-y-4">
+                <div className="flex justify-between items-center mb-4 border-b border-slate-100 pb-2">
+                  <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider">File Attachments & Patches</h3>
+                  <button 
+                    onClick={async () => {
+                      if (!currentUser) return;
+                      // Mocking an upload
+                      const filename = prompt("Enter mock filename (e.g., error.log, fix.patch):") || "unknown.txt";
+                      const isPatch = filename.endsWith(".patch") || filename.endsWith(".diff");
+                      await fetch(`/api/bugs/${bug.id}/attachments`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          uploaderId: currentUser.id,
+                          filename,
+                          fileUrl: `https://mock-storage.com/${bug.key}/${filename}`,
+                          fileSize: Math.floor(Math.random() * 1024 * 1024),
+                          isPatch
+                        })
+                      });
+                      loadBug();
+                    }}
+                    className="px-2 py-1 text-[10px] bg-slate-100 text-slate-600 rounded hover:bg-slate-200"
+                  >
+                    + Upload File
+                  </button>
+                </div>
+                
+                {bug.attachments?.length === 0 ? (
+                  <p className="text-xs text-slate-400 italic">No attachments added yet.</p>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {bug.attachments?.map((att: any) => (
+                      <div key={att.id} className="p-3 border border-slate-200 rounded-lg flex items-center justify-between">
+                        <div>
+                          <div className="text-xs font-bold text-violet-700 flex items-center gap-1">
+                            <FileCode className="w-3 h-3" />
+                            <a href={att.fileUrl} target="_blank" rel="noreferrer" className="hover:underline">{att.filename}</a>
+                            {att.isPatch && <span className="ml-1 px-1 bg-amber-100 text-amber-700 rounded text-[9px]">PATCH</span>}
+                          </div>
+                          <div className="text-[10px] text-slate-500 mt-1">
+                            {(att.fileSize / 1024).toFixed(1)} KB • Uploaded by {att.uploader.name}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -518,6 +619,15 @@ export default function BugDetailPage({ params }: { params: Promise<{ id: string
             </div>
           </div>
 
+          {/* Flags */}
+          <div className="p-5 rounded-xl bg-white border border-slate-200 shadow-sm space-y-4">
+            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+              <Flag className="w-3.5 h-3.5 text-slate-400" />
+              <span>Review Flags</span>
+            </h3>
+            <FlagMatrix bugId={bug.id} flags={bug.flags || []} onFlagUpdate={loadBug} />
+          </div>
+
           {/* Custom Fields (JSONB) */}
           <div className="p-5 rounded-xl bg-white border border-slate-200 shadow-sm space-y-4">
             <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
@@ -533,6 +643,31 @@ export default function BugDetailPage({ params }: { params: Promise<{ id: string
                   <div key={k} className="p-2.5 rounded-lg bg-slate-50 border border-slate-200">
                     <span className="text-[10px] text-slate-400 block font-mono uppercase">{k}</span>
                     <span className="text-slate-800 font-mono text-[11px] font-medium">{String(v)}</span>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* CC List */}
+          <div className="p-5 rounded-xl bg-white border border-slate-200 shadow-sm space-y-4">
+            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center justify-between gap-1.5">
+              <div className="flex items-center gap-1.5">
+                <User className="w-3.5 h-3.5 text-slate-400" />
+                <span>CC List ({bug.ccList?.length || 0})</span>
+              </div>
+              <button onClick={handleToggleCC} className="text-[10px] text-violet-600 font-medium hover:underline">
+                {bug.ccList?.some((cc: any) => cc.userId === currentUser?.id) ? "Remove me" : "Add me"}
+              </button>
+            </h3>
+
+            <div className="flex flex-wrap gap-1.5">
+              {bug.ccList?.length === 0 ? (
+                <span className="text-slate-400 text-[11px] italic">No users on CC.</span>
+              ) : (
+                bug.ccList?.map((cc: any) => (
+                  <div key={cc.id} className="px-2 py-1 bg-slate-100 rounded text-[11px] text-slate-700 font-medium border border-slate-200">
+                    {cc.user.name}
                   </div>
                 ))
               )}

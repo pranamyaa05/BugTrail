@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { recordAuditLog, verifyAuditChain } from "@/lib/audit";
+import { bugTrailEvents } from "@/lib/events";
 
 export async function GET(
   req: NextRequest,
@@ -17,6 +18,15 @@ export async function GET(
         component: true,
         reporter: true,
         assignee: true,
+        ccList: {
+          include: { user: true }
+        },
+        flags: {
+          include: { setter: true, requestee: true }
+        },
+        attachments: {
+          include: { uploader: true }
+        },
         comments: {
           include: {
             author: true,
@@ -111,8 +121,8 @@ export async function PATCH(
       updates.description = description;
       auditEntries.push({
         field: "description",
-        oldVal: "...",
-        newVal: "...",
+        oldVal: (existingBug.description || "").slice(0, 200),
+        newVal: (description || "").slice(0, 200),
         action: "UPDATE",
       });
     }
@@ -145,6 +155,8 @@ export async function PATCH(
         });
       }
     }
+
+    bugTrailEvents.emit("event", { type: "BUG_UPDATED", payload: updatedBug });
 
     return NextResponse.json(updatedBug);
   } catch (error: any) {

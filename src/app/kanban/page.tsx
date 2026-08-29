@@ -74,6 +74,12 @@ export default function KanbanPage() {
 
   useEffect(() => {
     fetchBugs();
+
+    const eventSource = new EventSource("/api/events");
+    eventSource.onmessage = () => {
+      fetchBugs(); // Refresh bugs when an event occurs
+    };
+    return () => eventSource.close();
   }, [fetchBugs]);
 
   const getBugsForColumn = (status: BugStatus) =>

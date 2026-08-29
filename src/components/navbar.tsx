@@ -6,7 +6,8 @@ import { usePathname } from "next/navigation";
 import { useUser } from "./user-context";
 import { CreateBugModal } from "./create-bug-modal";
 import { CommandPalette } from "./command-palette";
-import { Bug, Plus, LayoutGrid, ListFilter, Search, Command } from "lucide-react";
+import { NotificationsPopover } from "./notifications-popover";
+import { Bug, Plus, LayoutGrid, ListFilter, Search, Command, AlarmClock } from "lucide-react";
 
 export function Navbar() {
   const pathname = usePathname();
@@ -64,6 +65,17 @@ export function Navbar() {
                 <LayoutGrid className="w-3.5 h-3.5" />
                 <span>Kanban Board</span>
               </Link>
+              <Link
+                href="/whining"
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center gap-1.5 ${
+                  pathname === "/whining"
+                    ? "bg-amber-50 text-amber-700 border border-amber-200"
+                    : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
+                }`}
+              >
+                <AlarmClock className="w-3.5 h-3.5" />
+                <span>Whining</span>
+              </Link>
             </nav>
           </div>
 
@@ -89,6 +101,9 @@ export function Navbar() {
               <Plus className="w-3.5 h-3.5" />
               <span>File Bug</span>
             </button>
+
+            {/* Notifications */}
+            <NotificationsPopover />
 
             {/* Persona Switcher for Quick Demo */}
             <div className="relative flex items-center gap-2 pl-3 border-l border-slate-200">
