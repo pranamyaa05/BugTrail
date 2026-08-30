@@ -209,33 +209,33 @@ export function CreateBugModal({ isOpen, onClose, onSuccess }: CreateBugModalPro
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <div className="relative w-full max-w-2xl bg-white border border-slate-200 rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-forest-950/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+      <div className="relative w-full max-w-2xl bg-white rounded-2xl overflow-hidden flex flex-col max-h-[90vh] border border-ochre-300 shadow-2xl">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-white">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-forest-800 forest-gradient-frame">
           <div className="flex items-center gap-2.5">
-            <div className="p-1.5 rounded-md bg-violet-100 text-violet-600 border border-violet-200">
+            <div className="p-1.5 rounded-lg bg-btpurple-600 text-white border border-btpurple-500">
               <Plus className="w-4 h-4" />
             </div>
             <div>
-              <h2 className="text-base font-semibold text-slate-800">File a New Defect Report</h2>
-              <p className="text-xs text-slate-500">
-                Workspace: <strong className="text-violet-700">{activeTeam?.name || "My Workspace"}</strong>
+              <h2 className="text-base font-bold text-white tracking-tight">File a New Defect Report</h2>
+              <p className="text-xs text-white/70">
+                Workspace: <strong className="text-thickblue-300">{activeTeam?.name || "My Workspace"}</strong>
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 text-slate-500 hover:text-slate-700 rounded-lg hover:bg-slate-50 transition"
+            className="p-1.5 text-white/70 hover:text-white rounded-lg hover:bg-white/10 transition"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Body */}
-        <form onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-4 text-sm bg-white">
+        <form onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-4 text-sm bg-thickblue-50">
           {error && (
-            <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-xs">
+            <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-300 text-ladybug-600 rounded-xl text-xs">
               <AlertCircle className="w-4 h-4 shrink-0" />
               <span>{error}</span>
             </div>
@@ -245,8 +245,8 @@ export function CreateBugModal({ isOpen, onClose, onSuccess }: CreateBugModalPro
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Product Input + Datalist */}
             <div>
-              <label className="block text-xs font-medium text-slate-500 mb-1.5">
-                Product <span className="text-red-500">*</span>
+              <label className="block text-xs font-semibold text-ochre-800 mb-1.5">
+                Product <span className="text-ladybug-500">*</span>
               </label>
               <input
                 type="text"
@@ -254,7 +254,7 @@ export function CreateBugModal({ isOpen, onClose, onSuccess }: CreateBugModalPro
                 placeholder=""
                 value={productName}
                 onChange={(e) => setProductName(e.target.value)}
-                className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-800 text-xs focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition font-medium"
+                className="w-full bg-white border border-thickblue-200 rounded-xl px-3 py-2 text-ochre-950 text-xs focus:outline-none focus:border-btpurple-500 focus:ring-2 focus:ring-btpurple-500/20 transition font-medium"
               />
               <datalist id="product-datalist">
                 {products.map((p) => (
@@ -265,8 +265,8 @@ export function CreateBugModal({ isOpen, onClose, onSuccess }: CreateBugModalPro
 
             {/* Component Input + Datalist */}
             <div>
-              <label className="block text-xs font-medium text-slate-500 mb-1.5">
-                Component <span className="text-red-500">*</span>
+              <label className="block text-xs font-semibold text-ochre-800 mb-1.5">
+                Component <span className="text-ladybug-500">*</span>
               </label>
               <input
                 type="text"
@@ -274,7 +274,7 @@ export function CreateBugModal({ isOpen, onClose, onSuccess }: CreateBugModalPro
                 placeholder=""
                 value={componentName}
                 onChange={(e) => setComponentName(e.target.value)}
-                className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-800 text-xs focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition font-medium"
+                className="w-full bg-white border border-thickblue-200 rounded-xl px-3 py-2 text-ochre-950 text-xs focus:outline-none focus:border-btpurple-500 focus:ring-2 focus:ring-btpurple-500/20 transition font-medium"
               />
               <datalist id="component-datalist">
                 {availableComponents.map((c) => (
@@ -286,42 +286,42 @@ export function CreateBugModal({ isOpen, onClose, onSuccess }: CreateBugModalPro
 
           {/* Title */}
           <div>
-            <label className="block text-xs font-medium text-slate-500 mb-1.5">
-              Summary / Title <span className="text-red-500">*</span>
+            <label className="block text-xs font-semibold text-ochre-800 mb-1.5">
+              Summary / Title <span className="text-ladybug-500">*</span>
             </label>
             <input
               type="text"
               placeholder=""
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition text-xs font-medium"
+              className="w-full bg-white border border-thickblue-200 rounded-xl px-3 py-2 text-ochre-950 focus:outline-none focus:border-btpurple-500 focus:ring-2 focus:ring-btpurple-500/20 transition text-xs font-medium"
             />
           </div>
 
           {/* Description */}
           <div>
-            <label className="block text-xs font-medium text-slate-500 mb-1.5">
-              Description & Steps to Reproduce <span className="text-red-500">*</span>
+            <label className="block text-xs font-semibold text-ochre-800 mb-1.5">
+              Description &amp; Steps to Reproduce <span className="text-ladybug-500">*</span>
             </label>
             <textarea
               rows={4}
               placeholder=""
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition font-mono text-xs"
+              className="w-full bg-white border border-thickblue-200 rounded-xl px-3 py-2 text-ochre-950 focus:outline-none focus:border-btpurple-500 focus:ring-2 focus:ring-btpurple-500/20 transition font-mono text-xs"
             />
           </div>
 
           {/* AI Dedup Banner */}
           {isCheckingDedup && (
-             <div className="flex items-center gap-2 text-xs text-slate-500 italic">
-               <RefreshCw className="w-3.5 h-3.5 animate-spin text-violet-600" />
+             <div className="flex items-center gap-2 text-xs text-ochre-700 italic">
+               <RefreshCw className="w-3.5 h-3.5 animate-spin text-btpurple-600" />
                Checking for potential duplicates...
              </div>
           )}
           {duplicates.length > 0 && (
-            <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg space-y-2">
-              <div className="flex items-center gap-1.5 text-amber-800 text-xs font-bold">
+            <div className="p-3 bg-amber-50 border border-amber-300 rounded-xl space-y-2">
+              <div className="flex items-center gap-1.5 text-amber-900 text-xs font-bold">
                 <AlertCircle className="w-4 h-4" />
                 <span>Potential Duplicates Found</span>
               </div>
@@ -331,7 +331,7 @@ export function CreateBugModal({ isOpen, onClose, onSuccess }: CreateBugModalPro
                     <a href={`/bugs/${d.key}`} target="_blank" rel="noreferrer" className="hover:underline line-clamp-1">
                       <strong>{d.key}</strong>: {d.title}
                     </a>
-                    <span className="shrink-0 text-amber-700 font-mono ml-2">
+                    <span className="shrink-0 text-amber-800 font-mono ml-2">
                       {d.similarity}% match
                     </span>
                   </li>
@@ -342,12 +342,12 @@ export function CreateBugModal({ isOpen, onClose, onSuccess }: CreateBugModalPro
 
           {/* AI Auto-Triage Action */}
           <div className="flex items-center justify-between pt-2">
-            <h4 className="text-xs font-semibold text-slate-800">Triage Details</h4>
+            <h4 className="text-xs font-bold text-ochre-900">Triage Details</h4>
             <button
               type="button"
               onClick={handleSuggestTriage}
               disabled={isTriaging || !title || !description}
-              className="px-2.5 py-1.5 rounded bg-violet-50 text-violet-700 hover:bg-violet-100 border border-violet-200 text-[11px] font-medium transition flex items-center gap-1.5 disabled:opacity-50"
+              className="px-2.5 py-1.5 rounded-xl bg-btpurple-100 text-btpurple-800 hover:bg-btpurple-200 border border-btpurple-200 text-[11px] font-bold transition flex items-center gap-1.5 disabled:opacity-50"
             >
               {isTriaging ? (
                 <RefreshCw className="w-3 h-3 animate-spin" />
@@ -359,7 +359,7 @@ export function CreateBugModal({ isOpen, onClose, onSuccess }: CreateBugModalPro
           </div>
 
           {aiRationale && (
-            <div className="p-3 bg-violet-50/50 border border-violet-100 rounded-lg text-[11px] text-violet-800 font-medium">
+            <div className="p-3 bg-btpurple-50 border border-btpurple-200 rounded-xl text-[11px] text-btpurple-900 font-medium">
               <span className="font-bold mr-1">AI Triage Rationale:</span>
               {aiRationale}
             </div>
@@ -369,14 +369,14 @@ export function CreateBugModal({ isOpen, onClose, onSuccess }: CreateBugModalPro
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Severity */}
             <div>
-              <label className="block text-xs font-medium text-slate-500 mb-1.5">Severity</label>
+              <label className="block text-xs font-semibold text-ochre-800 mb-1.5">Severity</label>
               <input
                 type="text"
                 list="severity-datalist"
                 placeholder=""
                 value={severity}
                 onChange={(e) => setSeverity(e.target.value)}
-                className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:border-violet-500 transition text-xs font-medium"
+                className="w-full bg-white border border-thickblue-200 rounded-xl px-3 py-2 text-ochre-950 focus:outline-none focus:border-btpurple-500 transition text-xs font-medium"
               />
               <datalist id="severity-datalist">
                 {BUG_SEVERITIES.map((sev) => (
@@ -387,14 +387,14 @@ export function CreateBugModal({ isOpen, onClose, onSuccess }: CreateBugModalPro
 
             {/* Priority */}
             <div>
-              <label className="block text-xs font-medium text-slate-500 mb-1.5">Priority</label>
+              <label className="block text-xs font-semibold text-ochre-800 mb-1.5">Priority</label>
               <input
                 type="text"
                 list="priority-datalist"
                 placeholder=""
                 value={priority}
                 onChange={(e) => setPriority(e.target.value)}
-                className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:border-violet-500 transition text-xs font-medium"
+                className="w-full bg-white border border-thickblue-200 rounded-xl px-3 py-2 text-ochre-950 focus:outline-none focus:border-btpurple-500 transition text-xs font-medium"
               />
               <datalist id="priority-datalist">
                 {BUG_PRIORITIES.map((prio) => (
@@ -405,11 +405,11 @@ export function CreateBugModal({ isOpen, onClose, onSuccess }: CreateBugModalPro
 
             {/* Assignee (ONLY shows members of active workspace!) */}
             <div>
-              <label className="block text-xs font-medium text-slate-500 mb-1.5">Assignee</label>
+              <label className="block text-xs font-semibold text-ochre-800 mb-1.5">Assignee</label>
               <select
                 value={assigneeId}
                 onChange={(e) => setAssigneeId(e.target.value)}
-                className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:border-violet-500 transition text-xs"
+                className="w-full bg-white border border-thickblue-200 rounded-xl px-3 py-2 text-ochre-950 focus:outline-none focus:border-btpurple-500 transition text-xs"
               >
                 <option value="">(Unassigned)</option>
                 {teamMembers.map((u) => (
@@ -424,38 +424,38 @@ export function CreateBugModal({ isOpen, onClose, onSuccess }: CreateBugModalPro
           {/* OS & Build version */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-medium text-slate-500 mb-1.5">Operating System / Platform</label>
+              <label className="block text-xs font-semibold text-ochre-800 mb-1.5">Operating System / Platform</label>
               <input
                 type="text"
                 value={osField}
                 onChange={(e) => setOsField(e.target.value)}
-                className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:border-violet-500 transition text-xs font-mono"
+                className="w-full bg-white border border-thickblue-200 rounded-xl px-3 py-2 text-ochre-950 focus:outline-none focus:border-btpurple-500 transition text-xs font-mono"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-500 mb-1.5">Target Build / Version</label>
+              <label className="block text-xs font-semibold text-ochre-800 mb-1.5">Target Build / Version</label>
               <input
                 type="text"
                 value={buildVersion}
                 onChange={(e) => setBuildVersion(e.target.value)}
-                className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:border-violet-500 transition text-xs font-mono"
+                className="w-full bg-white border border-thickblue-200 rounded-xl px-3 py-2 text-ochre-950 focus:outline-none focus:border-btpurple-500 transition text-xs font-mono"
               />
             </div>
           </div>
 
           {/* Footer */}
-          <div className="flex justify-end gap-3 pt-4 border-t border-slate-200">
+          <div className="flex justify-end gap-3 pt-4 border-t border-thickblue-200">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 text-xs font-medium transition"
+              className="px-4 py-2 rounded-xl bg-white border border-ochre-300 text-ochre-800 hover:bg-ochre-100 text-xs font-semibold transition"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-5 py-2 rounded-lg bg-violet-600 hover:bg-violet-700 text-white font-semibold text-xs transition disabled:opacity-50 flex items-center gap-1.5 shadow-sm"
+              className="px-5 py-2 rounded-xl bg-btpurple-600 hover:bg-btpurple-700 text-white font-semibold text-xs transition disabled:opacity-50 flex items-center gap-1.5 shadow-sm"
             >
               {isSubmitting ? "Filing Bug..." : "File Defect Report"}
             </button>

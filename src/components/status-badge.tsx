@@ -11,9 +11,9 @@ interface StatusBadgeProps {
 export function StatusBadge({ status, resolution, className = "", size = "md" }: StatusBadgeProps) {
   const meta = STATUS_META[status as BugStatus] || {
     label: status,
-    bg: "bg-slate-100",
-    text: "text-slate-500",
-    border: "border-slate-200",
+    bg: "bg-ochre-100",
+    text: "text-ochre-700",
+    border: "border-thickblue-200",
   };
 
   const sizeClasses = size === "sm" ? "text-xs px-2 py-0.5" : "text-xs px-2.5 py-1 font-medium";
@@ -23,7 +23,7 @@ export function StatusBadge({ status, resolution, className = "", size = "md" }:
       <span className="h-1.5 w-1.5 rounded-full bg-current" />
       <span>{meta.label}</span>
       {status === "RESOLVED" && resolution && (
-        <span className="font-semibold text-emerald-600 opacity-90">({resolution})</span>
+        <span className="font-semibold text-forest-700 opacity-90">({resolution})</span>
       )}
     </div>
   );

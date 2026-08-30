@@ -1,8 +1,66 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #1e293b;
+  --background: #f7f4ea;
+  --foreground: #1f190a;
+}
+
+/* ============================================= */
+/* BugTrail Design Tokens (from design-reference) */
+/* Warm Ochre Canvas / Forest Green / Aqua / Purple */
+/* ============================================= */
+@theme {
+  /* Warm Ochre Canvas */
+  --color-ochre-50: #fcfaf5;
+  --color-ochre-100: #f7f4ea;
+  --color-ochre-200: #efe8d6;
+  --color-ochre-300: #e2d8bf;
+  --color-ochre-400: #cfc2a0;
+  --color-ochre-700: #6b5e3c;
+  --color-ochre-800: #4a3f23;
+  --color-ochre-900: #2e2713;
+  --color-ochre-950: #1f190a;
+
+  /* Rich Deep Forest Green Container & Frame */
+  --color-forest-950: #05140d;
+  --color-forest-900: #082016;
+  --color-forest-850: #0e2e21;
+  --color-forest-800: #133d2d;
+  --color-forest-750: #1a4d39;
+  --color-forest-700: #225e46;
+  --color-forest-600: #2e795b;
+
+  /* Thick Seafoam / Aqua Pastel Blue */
+  --color-thickblue-50: #f0f9fa;
+  --color-thickblue-100: #ddf3f6;
+  --color-thickblue-200: #c2eaef;
+  --color-thickblue-300: #9ddde5;
+  --color-thickblue-400: #72cad7;
+  --color-thickblue-450: #68c2d0;
+  --color-thickblue-500: #52b3c2;
+  --color-thickblue-700: #1b6a77;
+  --color-thickblue-800: #124e58;
+  --color-thickblue-900: #0d3a42;
+  --color-thickblue-950: #062228;
+
+  /* Purple Action Accents */
+  --color-btpurple-50: #faf5ff;
+  --color-btpurple-100: #f3e8ff;
+  --color-btpurple-200: #e9d5ff;
+  --color-btpurple-300: #d8b4fe;
+  --color-btpurple-500: #a855f7;
+  --color-btpurple-600: #7e22ce;
+  --color-btpurple-700: #6b21a8;
+  --color-btpurple-800: #581c87;
+  --color-btpurple-900: #3b0764;
+
+  /* Ladybug Identity */
+  --color-ladybug-500: #dc2626;
+  --color-ladybug-600: #b91c1c;
+
+  --shadow-corp-card: 0 4px 20px -2px rgba(15, 23, 42, 0.08), 0 2px 6px -1px rgba(15, 23, 42, 0.04);
+  --shadow-forest-frame: 0 25px 60px -15px rgba(5, 20, 13, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.1);
+  --shadow-thickblue-surface: 0 6px 20px 0 rgba(18, 78, 88, 0.12), inset 0 1px 0 0 rgba(255, 255, 255, 0.9);
 }
 
 @theme inline {
@@ -16,6 +74,46 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ============================================= */
+/* Composite Design Surfaces                     */
+/* ============================================= */
+
+/* Warm ochre page canvas with subtle radial glow */
+.bg-ochre-canvas {
+  background-color: #f7f4ea;
+  background-image:
+    radial-gradient(ellipse 60% 40% at 15% 0%, rgba(168, 85, 247, 0.06), transparent),
+    radial-gradient(ellipse 50% 35% at 85% 10%, rgba(82, 179, 194, 0.09), transparent);
+  background-attachment: fixed;
+}
+
+/* Deep forest green container / frame */
+.forest-gradient-frame {
+  background:
+    radial-gradient(ellipse at 20% 0%, rgba(46, 121, 91, 0.35), transparent 55%),
+    radial-gradient(ellipse at 80% 100%, rgba(34, 94, 70, 0.3), transparent 55%),
+    linear-gradient(150deg, #133d2d 0%, #0e2e21 45%, #082016 100%);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+/* Aqua pastel surface (cards / tables / columns) */
+.thickblue-surface {
+  background: linear-gradient(180deg, #f4fbfc 0%, #ddf3f6 100%);
+  border: 1px solid #9ddde5;
+}
+
+/* Aqua pastel card on ochre canvas */
+.thickblue-card {
+  background: #edf8fa;
+  border: 1px solid #9ddde5;
+}
+
+/* Kanban slice focus transition */
+.kanban-slice {
+  transition: flex 0.4s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.3s ease, transform 0.3s ease;
 }
 
 /* Smooth scrollbar */
@@ -25,21 +123,26 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: #efe8d6;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: #cfc2a0;
   border-radius: 999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: #6b5e3c;
+}
+
+::selection {
+  background: #e9d5ff;
+  color: #3b0764;
 }
 
 /* Focus ring utility */
 *:focus-visible {
-  outline: 2px solid #7c3aed;
+  outline: 2px solid #7e22ce;
   outline-offset: 2px;
   border-radius: 4px;
 }

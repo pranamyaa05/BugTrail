@@ -4,7 +4,7 @@ import { SEVERITY_META, PRIORITY_META, BugSeverity, BugPriority } from "@/lib/wo
 export function SeverityBadge({ severity }: { severity: string }) {
   const meta = SEVERITY_META[severity as BugSeverity] || {
     label: severity,
-    badge: "bg-slate-100 text-slate-500 border-slate-200",
+    badge: "bg-ochre-100 text-ochre-700 border-thickblue-200",
   };
 
   return (
@@ -17,7 +17,7 @@ export function SeverityBadge({ severity }: { severity: string }) {
 export function PriorityBadge({ priority }: { priority: string }) {
   const meta = PRIORITY_META[priority as BugPriority] || {
     label: priority,
-    badge: "bg-slate-100 text-slate-500 border-slate-200",
+    badge: "bg-ochre-100 text-ochre-700 border-thickblue-200",
   };
 
   return (

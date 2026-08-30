@@ -100,14 +100,14 @@ export function NotificationsPopover() {
       {/* Toasts */}
       <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2">
         {toasts.map((toast) => (
-          <div key={toast.id} className="bg-white border border-slate-200 shadow-lg rounded-lg p-3 w-72 animate-in slide-in-from-right-8 fade-in flex flex-col gap-1">
+          <div key={toast.id} className="bg-white border border-thickblue-200 shadow-lg rounded-lg p-3 w-72 animate-in slide-in-from-right-8 fade-in flex flex-col gap-1">
             <div className="flex justify-between items-start">
-              <span className="text-xs font-bold text-violet-700">{toast.title}</span>
-              <button onClick={() => setToasts(t => t.filter(x => x.id !== toast.id))} className="text-slate-400 hover:text-slate-600">
+              <span className="text-xs font-bold text-btpurple-800">{toast.title}</span>
+              <button onClick={() => setToasts(t => t.filter(x => x.id !== toast.id))} className="text-ochre-400 hover:text-ochre-800">
                 <X className="w-3 h-3" />
               </button>
             </div>
-            <span className="text-[11px] text-slate-600">{toast.message}</span>
+            <span className="text-[11px] text-ochre-800">{toast.message}</span>
           </div>
         ))}
       </div>
@@ -116,7 +116,7 @@ export function NotificationsPopover() {
       <div className="relative" ref={popoverRef}>
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="relative p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition"
+          className="relative p-2 text-ochre-700 hover:text-ochre-800 hover:bg-ochre-100 rounded-lg transition"
         >
           <Bell className="w-5 h-5" />
           {unreadCount > 0 && (
@@ -125,28 +125,28 @@ export function NotificationsPopover() {
         </button>
 
         {isOpen && (
-          <div className="absolute right-0 mt-2 w-80 bg-white border border-slate-200 shadow-xl rounded-xl z-50 overflow-hidden">
-            <div className="flex items-center justify-between p-3 border-b border-slate-100 bg-slate-50">
-              <span className="text-xs font-bold text-slate-800">Notifications</span>
+          <div className="absolute right-0 mt-2 w-80 bg-white border border-thickblue-200 shadow-xl rounded-xl z-50 overflow-hidden">
+            <div className="flex items-center justify-between p-3 border-b border-thickblue-200 bg-white">
+              <span className="text-xs font-bold text-ochre-950">Notifications</span>
               {unreadCount > 0 && (
-                <button onClick={markAllRead} className="text-[10px] text-violet-600 hover:underline">
+                <button onClick={markAllRead} className="text-[10px] text-btpurple-700 hover:underline">
                   Mark all as read
                 </button>
               )}
             </div>
             <div className="max-h-80 overflow-y-auto">
               {notifications.length === 0 ? (
-                <div className="p-6 text-center text-xs text-slate-400">
+                <div className="p-6 text-center text-xs text-ochre-400">
                   No notifications yet.
                 </div>
               ) : (
                 notifications.map((n) => (
-                  <div key={n.id} className={`p-3 border-b border-slate-100 flex flex-col gap-1 ${!n.read ? 'bg-violet-50/50' : 'bg-white'}`}>
+                  <div key={n.id} className={`p-3 border-b border-thickblue-200 flex flex-col gap-1 ${!n.read ? 'bg-btpurple-50/50' : 'bg-white'}`}>
                     <div className="flex justify-between items-start">
-                      <span className="text-xs font-bold text-slate-800">{n.title}</span>
-                      <span className="text-[9px] text-slate-400">{n.time.toLocaleTimeString()}</span>
+                      <span className="text-xs font-bold text-ochre-950">{n.title}</span>
+                      <span className="text-[9px] text-ochre-400">{n.time.toLocaleTimeString()}</span>
                     </div>
-                    <span className="text-[11px] text-slate-600">{n.message}</span>
+                    <span className="text-[11px] text-ochre-800">{n.message}</span>
                   </div>
                 ))
               )}

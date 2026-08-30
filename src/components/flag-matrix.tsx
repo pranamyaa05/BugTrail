@@ -47,26 +47,26 @@ export function FlagMatrix({ bugId, flags, onFlagUpdate }: FlagMatrixProps) {
     <div className="space-y-4">
       <div className="space-y-2">
         {flags.length === 0 ? (
-          <span className="text-slate-400 text-[11px] italic">No flags set.</span>
+          <span className="text-ochre-400 text-[11px] italic">No flags set.</span>
         ) : (
           flags.map((flag) => (
             <div key={flag.id} className="flex items-center gap-2 text-xs">
-              <span className="font-mono font-bold text-slate-700">{flag.name}{flag.status}</span>
-              <span className="text-slate-500">by {flag.setter.name}</span>
+              <span className="font-mono font-bold text-ochre-800">{flag.name}{flag.status}</span>
+              <span className="text-ochre-700">by {flag.setter.name}</span>
               {flag.requestee && (
-                <span className="text-slate-500">requested of {flag.requestee.name}</span>
+                <span className="text-ochre-700">requested of {flag.requestee.name}</span>
               )}
             </div>
           ))
         )}
       </div>
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-2 p-3 bg-slate-50 border border-slate-200 rounded-lg">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-2 p-3 bg-white border border-thickblue-200 rounded-lg">
         <div className="flex gap-2">
           <select 
             value={flagName} 
             onChange={e => setFlagName(e.target.value)}
-            className="text-xs p-1.5 border border-slate-200 rounded focus:outline-none focus:border-violet-500"
+            className="text-xs p-1.5 border border-thickblue-200 rounded focus:outline-none focus:border-btpurple-500"
           >
             <option value="review">review</option>
             <option value="needinfo">needinfo</option>
@@ -75,7 +75,7 @@ export function FlagMatrix({ bugId, flags, onFlagUpdate }: FlagMatrixProps) {
           <select 
             value={flagStatus} 
             onChange={e => setFlagStatus(e.target.value)}
-            className="text-xs p-1.5 border border-slate-200 rounded focus:outline-none focus:border-violet-500"
+            className="text-xs p-1.5 border border-thickblue-200 rounded focus:outline-none focus:border-btpurple-500"
           >
             <option value="?">?</option>
             <option value="+">+</option>
@@ -87,7 +87,7 @@ export function FlagMatrix({ bugId, flags, onFlagUpdate }: FlagMatrixProps) {
           <select 
             value={requesteeId} 
             onChange={e => setRequesteeId(e.target.value)}
-            className="text-xs p-1.5 border border-slate-200 rounded focus:outline-none focus:border-violet-500"
+            className="text-xs p-1.5 border border-thickblue-200 rounded focus:outline-none focus:border-btpurple-500"
           >
             <option value="">(Select Requestee)</option>
             {users.map(u => (
@@ -99,7 +99,7 @@ export function FlagMatrix({ bugId, flags, onFlagUpdate }: FlagMatrixProps) {
         <button 
           type="submit" 
           disabled={isSubmitting || !currentUser || (flagStatus === "?" && !requesteeId)}
-          className="px-2 py-1.5 bg-violet-600 text-white text-xs font-semibold rounded hover:bg-violet-700 disabled:opacity-50"
+          className="px-2 py-1.5 bg-btpurple-600 text-white text-xs font-semibold rounded hover:bg-btpurple-700 disabled:opacity-50"
         >
           Set Flag
         </button>

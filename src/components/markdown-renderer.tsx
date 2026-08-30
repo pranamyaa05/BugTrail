@@ -11,13 +11,13 @@ interface MarkdownRendererProps {
 
 export function MarkdownRenderer({ content, className = "" }: MarkdownRendererProps) {
   return (
-    <div className={`prose prose-sm max-w-none prose-pre:bg-slate-800 prose-pre:text-slate-50 ${className}`}>
+    <div className={`prose prose-sm max-w-none prose-pre:bg-forest-950 prose-pre:text-thickblue-100 ${className}`}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         rehypePlugins={[rehypeHighlight]}
         components={{
           a: ({ node, ...props }) => (
-            <a {...props} target="_blank" rel="noopener noreferrer" className="text-violet-600 hover:underline" />
+            <a {...props} target="_blank" rel="noopener noreferrer" className="text-btpurple-700 hover:underline" />
           ),
         }}
       >
