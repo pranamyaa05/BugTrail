@@ -2,13 +2,17 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useUser } from "@/components/user-context";
 import { StatusBadge } from "@/components/status-badge";
 import { SeverityBadge, PriorityBadge } from "@/components/severity-badge";
 import { BUG_STATUSES, BUG_SEVERITIES } from "@/lib/workflow";
 import { SavedQueries } from "@/components/saved-queries";
-import { Search, Bug, CheckCircle2, AlertTriangle, Flame, MessageSquare, RefreshCw } from "lucide-react";
+import { Search, Bug, CheckCircle2, AlertTriangle, Flame, MessageSquare, RefreshCw, Building2 } from "lucide-react";
 
 export default function DashboardPage() {
+  const router = useRouter();
+  const { currentUser, activeTeam, isLoading: authLoading } = useUser();
   const [bugs, setBugs] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -16,6 +20,13 @@ export default function DashboardPage() {
   const [selectedProduct, setSelectedProduct] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("");
   const [selectedSeverity, setSelectedSeverity] = useState("");
+
+  // Unauthenticated user redirect to /login
+  useEffect(() => {
+    if (!authLoading && !currentUser) {
+      router.push("/login");
+    }
+  }, [authLoading, currentUser, router]);
 
   const fetchDashboardData = async () => {
     setIsLoading(true);
@@ -40,14 +51,25 @@ export default function DashboardPage() {
   };
 
   useEffect(() => {
-    fetchDashboardData();
-
-    const eventSource = new EventSource("/api/events");
-    eventSource.onmessage = () => {
+    if (currentUser) {
       fetchDashboardData();
-    };
-    return () => eventSource.close();
-  }, []);
+
+      const eventSource = new EventSource("/api/events");
+      eventSource.onmessage = () => {
+        fetchDashboardData();
+      };
+      return () => eventSource.close();
+    }
+  }, [currentUser]);
+
+  if (authLoading || !currentUser) {
+    return (
+      <div className="py-32 flex flex-col items-center justify-center space-y-3">
+        <RefreshCw className="w-6 h-6 animate-spin text-violet-600" />
+        <p className="text-xs text-slate-500 font-medium">Redirecting to Sign In...</p>
+      </div>
+    );
+  }
 
   const filteredBugs = bugs.filter((bug) => {
     const matchesSearch =
@@ -69,9 +91,31 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-slate-800">Dashboard</h1>
+      {/* Workspace Banner */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-violet-50/50 border border-violet-100 rounded-2xl">
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 rounded-xl bg-white border border-violet-200 text-violet-700 shadow-xs">
+            <Building2 className="w-5 h-5" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className="text-sm font-bold text-slate-800">{activeTeam?.name || "Demo Workspace"}</h2>
+              {activeTeam?.joinCode && (
+                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-white border border-violet-200 text-violet-700">
+                  Join Code: {activeTeam.joinCode}
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-slate-500">Defect Tracking & Agile Pipeline</p>
+          </div>
+        </div>
+
+        <Link
+          href="/onboarding"
+          className="text-xs font-semibold text-violet-700 hover:text-violet-950 bg-white border border-violet-200 px-3 py-1.5 rounded-lg shadow-xs hover:bg-violet-50 transition w-fit"
+        >
+          + Switch / Create Workspace
+        </Link>
       </div>
 
       {/* Metrics Row */}
@@ -131,9 +175,12 @@ export default function DashboardPage() {
         </div>
 
         <div className="flex items-center gap-2 w-full md:w-auto">
-          <SavedQueries 
+          <SavedQueries
             currentFilters={{
-              searchQuery, selectedProduct, selectedStatus, selectedSeverity
+              searchQuery,
+              selectedProduct,
+              selectedStatus,
+              selectedSeverity,
             }}
             onLoadQuery={(filters) => {
               setSearchQuery(filters.searchQuery || "");

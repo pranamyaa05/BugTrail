@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import { recordAuditLog } from "../src/lib/audit";
+import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
@@ -7,16 +8,33 @@ async function main() {
   console.log("Cleaning database...");
   await prisma.auditLog.deleteMany({});
   await prisma.comment.deleteMany({});
+  await prisma.flag.deleteMany({});
+  await prisma.attachment.deleteMany({});
+  await prisma.bugCC.deleteMany({});
+  await prisma.savedQuery.deleteMany({});
+  await prisma.whiningRule.deleteMany({});
   await prisma.bug.deleteMany({});
   await prisma.component.deleteMany({});
   await prisma.product.deleteMany({});
+  await prisma.teamMember.deleteMany({});
+  await prisma.team.deleteMany({});
   await prisma.user.deleteMany({});
 
-  console.log("Seeding users...");
+  const defaultPasswordHash = await bcrypt.hash("password123", 10);
+
+  console.log("Seeding demo team & users...");
+  const demoTeam = await prisma.team.create({
+    data: {
+      name: "Demo Workspace",
+      joinCode: "DEMO-BUGTRAIL",
+    },
+  });
+
   const admin = await prisma.user.create({
     data: {
       email: "alice.admin@bugtrail.org",
       name: "Alice Vance (Lead Architect)",
+      passwordHash: defaultPasswordHash,
       role: "ADMIN",
       avatarUrl: "https://api.dicebear.com/7.x/bottts/svg?seed=Alice",
     },
@@ -26,6 +44,7 @@ async function main() {
     data: {
       email: "bob.triager@bugtrail.org",
       name: "Bob Martinez (Bug Triager)",
+      passwordHash: defaultPasswordHash,
       role: "TRIAGER",
       avatarUrl: "https://api.dicebear.com/7.x/bottts/svg?seed=Bob",
     },
@@ -35,6 +54,7 @@ async function main() {
     data: {
       email: "chaitanya.dev@bugtrail.org",
       name: "Chaitanya (Core Developer)",
+      passwordHash: defaultPasswordHash,
       role: "DEVELOPER",
       avatarUrl: "https://api.dicebear.com/7.x/bottts/svg?seed=Chaitanya",
     },
@@ -44,6 +64,7 @@ async function main() {
     data: {
       email: "eva.frontend@bugtrail.org",
       name: "Eva Lin (Frontend Specialist)",
+      passwordHash: defaultPasswordHash,
       role: "DEVELOPER",
       avatarUrl: "https://api.dicebear.com/7.x/bottts/svg?seed=Eva",
     },
@@ -53,14 +74,27 @@ async function main() {
     data: {
       email: "community.reporter@external.io",
       name: "Community Reporter",
+      passwordHash: defaultPasswordHash,
       role: "REPORTER",
       avatarUrl: "https://api.dicebear.com/7.x/bottts/svg?seed=Reporter",
     },
   });
 
+  // Assign team memberships
+  await prisma.teamMember.createMany({
+    data: [
+      { teamId: demoTeam.id, userId: admin.id, role: "ADMIN" },
+      { teamId: demoTeam.id, userId: triager.id, role: "TRIAGER" },
+      { teamId: demoTeam.id, userId: dev1.id, role: "DEVELOPER" },
+      { teamId: demoTeam.id, userId: dev2.id, role: "DEVELOPER" },
+      { teamId: demoTeam.id, userId: reporter.id, role: "REPORTER" },
+    ],
+  });
+
   console.log("Seeding products & components...");
   const engine = await prisma.product.create({
     data: {
+      teamId: demoTeam.id,
       name: "Core Engine (Gecko Next)",
       description: "High-performance browser layout and rendering engine",
       components: {
@@ -76,6 +110,7 @@ async function main() {
 
   const devtools = await prisma.product.create({
     data: {
+      teamId: demoTeam.id,
       name: "Developer DevTools",
       description: "In-browser inspection, console, and performance tools",
       components: {
@@ -105,6 +140,7 @@ async function main() {
       status: "ASSIGNED",
       severity: "BLOCKER",
       priority: "P1",
+      teamId: demoTeam.id,
       productId: engine.id,
       componentId: layoutComp.id,
       reporterId: reporter.id,
@@ -148,6 +184,7 @@ async function main() {
       resolution: "FIXED",
       severity: "CRITICAL",
       priority: "P1",
+      teamId: demoTeam.id,
       productId: engine.id,
       componentId: jsComp.id,
       reporterId: triager.id,
@@ -199,6 +236,7 @@ async function main() {
       status: "NEW",
       severity: "MAJOR",
       priority: "P2",
+      teamId: demoTeam.id,
       productId: devtools.id,
       componentId: debugComp.id,
       reporterId: reporter.id,
@@ -223,6 +261,7 @@ async function main() {
       status: "UNCONFIRMED",
       severity: "NORMAL",
       priority: "P3",
+      teamId: demoTeam.id,
       productId: engine.id,
       componentId: netComp.id,
       reporterId: reporter.id,
@@ -247,6 +286,7 @@ async function main() {
       resolution: "FIXED",
       severity: "NORMAL",
       priority: "P3",
+      teamId: demoTeam.id,
       productId: devtools.id,
       componentId: devtools.components[0].id,
       reporterId: triager.id,
@@ -261,24 +301,8 @@ async function main() {
     action: "CREATE",
     newValue: "Bug created with status NEW",
   });
-  await recordAuditLog({
-    bugId: bug5.id,
-    actorId: dev2.id,
-    action: "STATUS_CHANGE",
-    fieldChanged: "status",
-    oldValue: "NEW",
-    newValue: "RESOLVED",
-  });
-  await recordAuditLog({
-    bugId: bug5.id,
-    actorId: triager.id,
-    action: "STATUS_CHANGE",
-    fieldChanged: "status",
-    oldValue: "RESOLVED",
-    newValue: "VERIFIED",
-  });
 
-  console.log("Database seeded successfully with 5 realistic bugs and verified audit chains!");
+  console.log("Database seeded successfully with Demo Workspace, 5 realistic bugs and verified audit chains!");
 }
 
 main()

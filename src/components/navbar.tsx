@@ -2,24 +2,67 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useUser } from "./user-context";
 import { CreateBugModal } from "./create-bug-modal";
 import { CommandPalette } from "./command-palette";
 import { NotificationsPopover } from "./notifications-popover";
-import { Bug, Plus, LayoutGrid, ListFilter, Search, Command, AlarmClock } from "lucide-react";
+import {
+  Bug,
+  Plus,
+  LayoutGrid,
+  ListFilter,
+  Search,
+  Command,
+  AlarmClock,
+  LogOut,
+  ChevronDown,
+  Building2,
+  Check,
+} from "lucide-react";
 
 export function Navbar() {
   const pathname = usePathname();
-  const { currentUser, users, setCurrentUser } = useUser();
+  const router = useRouter();
+  const { currentUser, activeTeam, userRole, memberships, switchTeam, logout } = useUser();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isCmdKOpen, setIsCmdKOpen] = useState(false);
+  const [isWorkspaceMenuOpen, setIsWorkspaceMenuOpen] = useState(false);
 
   useEffect(() => {
     const handleOpenCmdK = () => setIsCmdKOpen(true);
     window.addEventListener("open-command-palette", handleOpenCmdK);
     return () => window.removeEventListener("open-command-palette", handleOpenCmdK);
   }, []);
+
+  if (["/landing", "/login", "/signup"].includes(pathname)) {
+    return (
+      <header className="sticky top-0 z-40 w-full border-b border-slate-200 bg-white/90 backdrop-blur-md">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+          <Link href="/landing" className="flex items-center gap-2.5 group">
+            <div className="p-2 rounded-lg bg-gradient-to-br from-violet-500 to-violet-600 text-white font-black shadow-sm">
+              <Bug className="w-5 h-5" />
+            </div>
+            <span className="font-bold text-base tracking-tight text-slate-800">BugTrail</span>
+          </Link>
+          <div className="flex items-center gap-3">
+            <Link
+              href="/login"
+              className="px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 transition"
+            >
+              Sign In
+            </Link>
+            <Link
+              href="/signup"
+              className="px-3.5 py-1.5 rounded-lg bg-violet-600 hover:bg-violet-700 text-white font-semibold text-xs transition shadow-sm"
+            >
+              Get Started
+            </Link>
+          </div>
+        </div>
+      </header>
+    );
+  }
 
   return (
     <>
@@ -79,12 +122,12 @@ export function Navbar() {
             </nav>
           </div>
 
-          {/* Right actions: Cmd+K search button + File Bug + Persona switcher */}
+          {/* Right actions */}
           <div className="flex items-center gap-3">
             {/* Cmd+K trigger button */}
             <button
               onClick={() => setIsCmdKOpen(true)}
-              className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-400 hover:text-slate-600 text-xs transition"
+              className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-400 hover:text-slate-600 text-xs transition"
               title="Search or type command (Cmd+K)"
             >
               <Search className="w-3.5 h-3.5" />
@@ -105,32 +148,121 @@ export function Navbar() {
             {/* Notifications */}
             <NotificationsPopover />
 
-            {/* Persona Switcher for Quick Demo */}
-            <div className="relative flex items-center gap-2 pl-3 border-l border-slate-200">
-              <div className="hidden lg:flex flex-col text-right">
-                <span className="text-[11px] font-medium text-slate-800 leading-tight">
-                  {currentUser?.name || "Loading..."}
-                </span>
-                <span className="text-[10px] text-slate-500 font-mono">
-                  {currentUser?.role || "ROLE"}
-                </span>
-              </div>
-
-              <select
-                value={currentUser?.id || ""}
-                onChange={(e) => {
-                  const u = users.find((item) => item.id === e.target.value);
-                  if (u) setCurrentUser(u);
-                }}
-                className="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 cursor-pointer"
-                title="Switch User Persona (Demo)"
+            {/* User Profile & Team Switcher */}
+            <div className="relative pl-2 border-l border-slate-200">
+              <button
+                onClick={() => setIsWorkspaceMenuOpen(!isWorkspaceMenuOpen)}
+                className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-slate-50 border border-slate-200 text-left transition"
               >
-                {users.map((u) => (
-                  <option key={u.id} value={u.id}>
-                    {u.name} ({u.role})
-                  </option>
-                ))}
-              </select>
+                <div className="w-7 h-7 rounded-full bg-violet-100 border border-violet-200 text-violet-700 font-bold flex items-center justify-center text-xs">
+                  {currentUser?.name ? currentUser.name.charAt(0).toUpperCase() : "U"}
+                </div>
+                <div className="hidden sm:flex flex-col">
+                  <span className="text-[11px] font-bold text-slate-800 leading-tight">
+                    {currentUser?.name || "User"}
+                  </span>
+                  <div className="flex items-center gap-1.5 text-[10px] text-slate-500 font-mono">
+                    <span className="text-violet-600 font-semibold">{userRole}</span>
+                    {activeTeam && (
+                      <>
+                        <span>•</span>
+                        <span className="truncate max-w-[90px]">{activeTeam.name}</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+                <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+              </button>
+
+              {/* Workspace / Profile Menu */}
+              {isWorkspaceMenuOpen && (
+                <div className="absolute right-0 mt-2 w-64 bg-white border border-slate-200 rounded-xl shadow-xl z-50 p-2 text-xs space-y-2 animate-in fade-in duration-150">
+                  {/* Account Header */}
+                  <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200 space-y-1">
+                    <div className="font-bold text-slate-900">{currentUser?.name}</div>
+                    <div className="text-slate-500 font-mono text-[10px]">{currentUser?.email}</div>
+                    <div className="inline-block mt-1 px-2 py-0.5 rounded bg-violet-100 text-violet-700 font-mono text-[10px] font-bold">
+                      ROLE: {userRole}
+                    </div>
+                  </div>
+
+                  {/* Active Workspace Info */}
+                  {activeTeam && (
+                    <div className="px-2 py-1">
+                      <span className="text-[10px] font-bold uppercase text-slate-400 tracking-wider block mb-1">
+                        Active Workspace
+                      </span>
+                      <div className="flex items-center justify-between p-2 rounded bg-violet-50/50 border border-violet-100 text-slate-800">
+                        <div className="font-medium text-slate-800 truncate">
+                          {activeTeam.name}
+                        </div>
+                        {activeTeam.joinCode && (
+                          <span
+                            className="font-mono text-[10px] text-violet-700 bg-white border border-violet-200 px-1.5 py-0.5 rounded"
+                            title="Shareable Join Code"
+                          >
+                            {activeTeam.joinCode}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Switch Workspace (Lists ONLY teams the user is actually a member of!) */}
+                  {memberships.length > 0 && (
+                    <div className="px-2 py-1 space-y-1 border-t border-slate-100 pt-2">
+                      <span className="text-[10px] font-bold uppercase text-slate-400 tracking-wider block">
+                        My Workspaces
+                      </span>
+                      {memberships.map((m) => (
+                        <button
+                          key={m.teamId}
+                          onClick={() => {
+                            switchTeam(m.teamId);
+                            setIsWorkspaceMenuOpen(false);
+                          }}
+                          className={`w-full text-left p-1.5 rounded flex items-center justify-between transition ${
+                            m.teamId === activeTeam?.id
+                              ? "bg-violet-100 text-violet-800 font-bold"
+                              : "hover:bg-slate-50 text-slate-700"
+                          }`}
+                        >
+                          <div className="flex items-center gap-1.5 truncate">
+                            {m.teamId === activeTeam?.id && <Check className="w-3 h-3 text-violet-600 shrink-0" />}
+                            <span className="truncate">{m.teamName}</span>
+                          </div>
+                          <span className="text-[10px] font-mono text-slate-400 shrink-0">{m.role}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Team & Logout Actions */}
+                  <div className="border-t border-slate-100 pt-1 space-y-0.5">
+                    <button
+                      onClick={() => {
+                        setIsWorkspaceMenuOpen(false);
+                        router.push("/onboarding");
+                      }}
+                      className="w-full text-left px-2.5 py-1.5 rounded hover:bg-slate-50 text-violet-700 font-medium flex items-center gap-2"
+                    >
+                      <Building2 className="w-3.5 h-3.5" />
+                      <span>Create or Join Team...</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setIsWorkspaceMenuOpen(false);
+                        logout();
+                      }}
+                      className="w-full text-left px-2.5 py-1.5 rounded hover:bg-red-50 text-red-600 font-medium flex items-center gap-2"
+                    >
+                      <LogOut className="w-3.5 h-3.5" />
+                      <span>Log Out</span>
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

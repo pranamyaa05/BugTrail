@@ -8,13 +8,15 @@ generator client {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String
-  role      String   @default("DEVELOPER")
-  avatarUrl String?
-  createdAt DateTime @default(now())
+  id           String       @id @default(cuid())
+  email        String       @unique
+  name         String
+  passwordHash String?
+  role         String       @default("DEVELOPER")
+  avatarUrl    String?
+  createdAt    DateTime     @default(now())
 
+  memberships    TeamMember[]
   reportedBugs   Bug[]        @relation("ReportedBugs")
   assignedBugs   Bug[]        @relation("AssignedBugs")
   comments       Comment[]
@@ -26,12 +28,38 @@ model User {
   savedQueries   SavedQuery[]
 }
 
+model Team {
+  id        String   @id @default(cuid())
+  name      String
+  joinCode  String   @unique
+  createdAt DateTime @default(now())
+
+  members  TeamMember[]
+  products Product[]
+  bugs     Bug[]
+}
+
+model TeamMember {
+  id        String   @id @default(cuid())
+  teamId    String
+  userId    String
+  role      String   @default("DEVELOPER") // ADMIN, TRIAGER, DEVELOPER, QA/TESTER, REPORTER
+  createdAt DateTime @default(now())
+
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, userId])
+}
+
 model Product {
   id          String   @id @default(cuid())
+  teamId      String?
   name        String   @unique
   description String?
   createdAt   DateTime @default(now())
 
+  team       Team?       @relation(fields: [teamId], references: [id], onDelete: Cascade)
   components Component[]
   bugs       Bug[]
 }
@@ -60,6 +88,7 @@ model Bug {
   severity    String  @default("NORMAL")
   priority    String  @default("P3")
 
+  teamId      String?
   productId   String
   componentId String
   reporterId  String
@@ -72,6 +101,7 @@ model Bug {
   updatedAt  DateTime  @updatedAt
   resolvedAt DateTime?
 
+  team      Team?     @relation(fields: [teamId], references: [id], onDelete: Cascade)
   product   Product   @relation(fields: [productId], references: [id])
   component Component @relation(fields: [componentId], references: [id])
   reporter  User      @relation("ReportedBugs", fields: [reporterId], references: [id])
@@ -128,8 +158,8 @@ model Flag {
   bugId       String
   setterId    String
   requesteeId String?
-  name        String // "review", "needinfo", "approval"
-  status      String // "?", "+", "-"
+  name        String
+  status      String
   createdAt   DateTime @default(now())
 
   bug       Bug   @relation(fields: [bugId], references: [id], onDelete: Cascade)
@@ -162,15 +192,15 @@ model SavedQuery {
 }
 
 model WhiningRule {
-  id            String   @id @default(cuid())
-  name          String
-  description   String?
-  statuses      String   // Comma-separated statuses to watch, e.g. "NEW,UNCONFIRMED"
-  staleDays     Int      @default(3)
-  severities    String?  // Comma-separated severities filter, e.g. "BLOCKER,CRITICAL"
-  isActive      Boolean  @default(true)
-  lastRunAt     DateTime?
-  lastRunCount  Int      @default(0)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id           String    @id @default(cuid())
+  name         String
+  description  String?
+  statuses     String
+  staleDays    Int       @default(3)
+  severities   String?
+  isActive     Boolean   @default(true)
+  lastRunAt    DateTime?
+  lastRunCount Int       @default(0)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 }

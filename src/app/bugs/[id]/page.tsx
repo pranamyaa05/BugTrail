@@ -518,27 +518,37 @@ export default function BugDetailPage({ params }: { params: Promise<{ id: string
                 <div className="flex justify-between items-center mb-4 border-b border-slate-100 pb-2">
                   <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider">File Attachments & Patches</h3>
                   <button 
-                    onClick={async () => {
+                    onClick={() => {
                       if (!currentUser) return;
-                      // Mocking an upload
-                      const filename = prompt("Enter mock filename (e.g., error.log, fix.patch):") || "unknown.txt";
-                      const isPatch = filename.endsWith(".patch") || filename.endsWith(".diff");
-                      await fetch(`/api/bugs/${bug.id}/attachments`, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                          uploaderId: currentUser.id,
-                          filename,
-                          fileUrl: `https://mock-storage.com/${bug.key}/${filename}`,
-                          fileSize: Math.floor(Math.random() * 1024 * 1024),
-                          isPatch
-                        })
-                      });
-                      loadBug();
+                      const fileInput = document.createElement("input");
+                      fileInput.type = "file";
+                      fileInput.onchange = async (e: any) => {
+                        const file = e.target.files?.[0];
+                        if (!file || !currentUser) return;
+                        const isPatch = file.name.endsWith(".patch") || file.name.endsWith(".diff");
+                        const reader = new FileReader();
+                        reader.onload = async () => {
+                          const fileUrl = (reader.result as string) || `https://storage.bugtrail.io/${bug.key}/${file.name}`;
+                          await fetch(`/api/bugs/${bug.id}/attachments`, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                              uploaderId: currentUser.id,
+                              filename: file.name,
+                              fileUrl,
+                              fileSize: file.size,
+                              isPatch
+                            })
+                          });
+                          loadBug();
+                        };
+                        reader.readAsDataURL(file);
+                      };
+                      fileInput.click();
                     }}
-                    className="px-2 py-1 text-[10px] bg-slate-100 text-slate-600 rounded hover:bg-slate-200"
+                    className="px-3 py-1.5 text-xs font-semibold bg-violet-600 hover:bg-violet-700 text-white rounded-lg shadow-xs transition"
                   >
-                    + Upload File
+                    + Select & Upload File
                   </button>
                 </div>
                 

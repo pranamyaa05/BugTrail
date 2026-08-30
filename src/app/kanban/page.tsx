@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useUser } from "@/components/user-context";
 import { StatusBadge } from "@/components/status-badge";
 import { SeverityBadge, PriorityBadge } from "@/components/severity-badge";
@@ -36,7 +37,6 @@ interface BugCard {
   createdAt: string;
 }
 
-// Only show active workflow columns on the board (not VERIFIED/CLOSED for cleanliness)
 const KANBAN_COLUMNS: BugStatus[] = [
   "UNCONFIRMED",
   "NEW",
@@ -56,12 +56,19 @@ const COLUMN_COLORS: Record<BugStatus, { header: string; dot: string; dropzone: 
 };
 
 export default function KanbanPage() {
-  const { currentUser } = useUser();
+  const router = useRouter();
+  const { currentUser, userRole, isLoading: authLoading } = useUser();
   const [bugs, setBugs] = useState<BugCard[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [draggedBug, setDraggedBug] = useState<BugCard | null>(null);
   const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
   const [transitioning, setTransitioning] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!authLoading && !currentUser) {
+      router.push("/login");
+    }
+  }, [authLoading, currentUser, router]);
 
   const fetchBugs = useCallback(() => {
     setIsLoading(true);
@@ -73,22 +80,24 @@ export default function KanbanPage() {
   }, []);
 
   useEffect(() => {
-    fetchBugs();
+    if (currentUser) {
+      fetchBugs();
 
-    const eventSource = new EventSource("/api/events");
-    eventSource.onmessage = () => {
-      fetchBugs(); // Refresh bugs when an event occurs
-    };
-    return () => eventSource.close();
-  }, [fetchBugs]);
-
-  const getBugsForColumn = (status: BugStatus) =>
-    bugs.filter((b) => b.status === status);
+      const eventSource = new EventSource("/api/events");
+      eventSource.onmessage = () => {
+        fetchBugs();
+      };
+      return () => eventSource.close();
+    }
+  }, [fetchBugs, currentUser]);
 
   const handleDragStart = (e: React.DragEvent, bug: BugCard) => {
+    if (userRole === "REPORTER") {
+      alert("Role Restriction: REPORTER role cannot drag and drop workflow transitions.");
+      return;
+    }
     setDraggedBug(bug);
     e.dataTransfer.effectAllowed = "move";
-    // Add a tiny delay so the card visually "lifts"
     const target = e.currentTarget as HTMLElement;
     setTimeout(() => target.classList.add("opacity-40"), 0);
   };
@@ -106,18 +115,14 @@ export default function KanbanPage() {
     setDragOverColumn(status);
   };
 
-  const handleDragLeave = () => {
-    setDragOverColumn(null);
-  };
-
   const handleDrop = async (e: React.DragEvent, targetStatus: BugStatus) => {
     e.preventDefault();
     setDragOverColumn(null);
 
     if (!draggedBug || !currentUser) return;
+    if (userRole === "REPORTER") return;
     if (draggedBug.status === targetStatus) return;
 
-    // Check if transition is allowed
     const allowed = ALLOWED_TRANSITIONS[draggedBug.status as BugStatus] || [];
     if (!allowed.includes(targetStatus)) {
       alert(
@@ -126,7 +131,6 @@ export default function KanbanPage() {
       return;
     }
 
-    // If moving to RESOLVED, use a simple prompt for resolution
     let resolution: string | null = null;
     if (targetStatus === "RESOLVED") {
       const res = prompt(
@@ -156,7 +160,6 @@ export default function KanbanPage() {
         throw new Error(data.error || "Failed to transition");
       }
 
-      // Optimistic update
       setBugs((prev) =>
         prev.map((b) =>
           b.id === draggedBug.id
@@ -177,13 +180,11 @@ export default function KanbanPage() {
     }
   };
 
-  if (isLoading) {
+  if (authLoading || !currentUser) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <div className="flex items-center gap-3 text-slate-400">
-          <RefreshCw className="w-5 h-5 animate-spin text-violet-500" />
-          <span className="text-sm">Loading Kanban board...</span>
-        </div>
+      <div className="py-32 flex flex-col items-center justify-center space-y-3">
+        <RefreshCw className="w-6 h-6 animate-spin text-violet-600" />
+        <p className="text-xs text-slate-500 font-medium">Redirecting to Sign In...</p>
       </div>
     );
   }
@@ -197,140 +198,89 @@ export default function KanbanPage() {
             <Columns3 className="w-5 h-5" />
           </div>
           <div>
-            <h1 className="text-lg font-bold text-slate-800">Kanban Board</h1>
-            <p className="text-xs text-slate-500">
-              Drag and drop bugs between columns to execute Bugzilla workflow transitions
-            </p>
+            <h1 className="text-xl font-bold text-slate-800">Kanban Workflow Board</h1>
+            <p className="text-xs text-slate-500">Drag and drop defects across Bugzilla state transitions</p>
           </div>
         </div>
+
         <button
           onClick={fetchBugs}
-          className="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 transition text-xs font-medium flex items-center gap-1.5"
+          className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-50 rounded-lg border border-slate-200 transition"
+          title="Refresh board"
         >
-          <RefreshCw className="w-3.5 h-3.5" />
-          Refresh
+          <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin" : ""}`} />
         </button>
       </div>
 
-      {/* Transition hint */}
-      {draggedBug && (
-        <div className="p-3 bg-violet-50 border border-violet-200 rounded-lg text-xs text-violet-700 flex items-center gap-2 animate-in fade-in duration-200">
-          <ArrowRight className="w-4 h-4" />
-          <span>
-            Dragging <strong>{draggedBug.key}</strong> — drop on a valid destination column.
-            Allowed: <strong>{(ALLOWED_TRANSITIONS[draggedBug.status as BugStatus] || []).join(", ")}</strong>
-          </span>
-        </div>
-      )}
-
-      {/* Kanban Columns */}
-      <div className="flex gap-4 overflow-x-auto pb-4" style={{ minHeight: "calc(100vh - 260px)" }}>
-        {KANBAN_COLUMNS.map((status) => {
-          const columnBugs = getBugsForColumn(status);
-          const colors = COLUMN_COLORS[status];
-          const meta = STATUS_META[status];
-          const isDropTarget = dragOverColumn === status;
-          const isValidDrop =
-            draggedBug &&
-            draggedBug.status !== status &&
-            (ALLOWED_TRANSITIONS[draggedBug.status as BugStatus] || []).includes(status);
+      {/* Board Columns */}
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 overflow-x-auto pb-4">
+        {KANBAN_COLUMNS.map((colStatus) => {
+          const colBugs = bugs.filter((b) => b.status === colStatus);
+          const isOver = dragOverColumn === colStatus;
+          const colors = COLUMN_COLORS[colStatus];
 
           return (
             <div
-              key={status}
-              className="flex-shrink-0 flex flex-col rounded-xl border border-slate-200 bg-slate-50/50 overflow-hidden"
-              style={{ width: "280px" }}
-              onDragOver={(e) => handleDragOver(e, status)}
-              onDragLeave={handleDragLeave}
-              onDrop={(e) => handleDrop(e, status)}
+              key={colStatus}
+              onDragOver={(e) => handleDragOver(e, colStatus)}
+              onDragLeave={() => setDragOverColumn(null)}
+              onDrop={(e) => handleDrop(e, colStatus)}
+              className={`flex flex-col rounded-xl border p-3 min-h-[500px] transition ${
+                isOver
+                  ? colors.dropzone + " ring-2 ring-violet-400"
+                  : "bg-slate-50/50 border-slate-200"
+              }`}
             >
               {/* Column Header */}
-              <div className="px-4 py-3 bg-white border-b border-slate-200 flex items-center justify-between">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-200 mb-3">
                 <div className="flex items-center gap-2">
                   <span className={`w-2 h-2 rounded-full ${colors.dot}`} />
-                  <span className={`text-xs font-bold uppercase tracking-wider ${colors.header}`}>
-                    {meta.label}
-                  </span>
+                  <span className={`text-xs font-bold ${colors.header}`}>{colStatus}</span>
                 </div>
-                <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${colors.count}`}>
-                  {columnBugs.length}
+                <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${colors.count}`}>
+                  {colBugs.length}
                 </span>
               </div>
 
-              {/* Drop zone / card list */}
-              <div
-                className={`flex-1 p-2 space-y-2 overflow-y-auto transition-colors duration-200 ${
-                  isDropTarget && isValidDrop
-                    ? colors.dropzone + " border-2 border-dashed"
-                    : isDropTarget && !isValidDrop && draggedBug
-                    ? "bg-red-50/50 border-2 border-dashed border-red-200"
-                    : ""
-                }`}
-              >
-                {columnBugs.length === 0 ? (
-                  <div className="text-center py-8 text-xs text-slate-400 italic">
-                    No bugs
+              {/* Cards Container */}
+              <div className="flex-1 space-y-2.5 overflow-y-auto">
+                {colBugs.length === 0 ? (
+                  <div className="h-24 border border-dashed border-slate-200 rounded-lg flex items-center justify-center text-[11px] text-slate-400">
+                    No defects
                   </div>
                 ) : (
-                  columnBugs.map((bug) => (
+                  colBugs.map((bug) => (
                     <div
                       key={bug.id}
-                      draggable
+                      draggable={userRole !== "REPORTER"}
                       onDragStart={(e) => handleDragStart(e, bug)}
                       onDragEnd={handleDragEnd}
-                      className={`group bg-white border border-slate-200 rounded-lg p-3 cursor-grab active:cursor-grabbing hover:shadow-md hover:border-violet-200 transition-all duration-150 ${
-                        transitioning === bug.id ? "opacity-50 pointer-events-none" : ""
-                      }`}
+                      className="group p-3 rounded-lg bg-white border border-slate-200 shadow-xs hover:shadow-md hover:border-violet-300 transition cursor-grab active:cursor-grabbing space-y-2"
                     >
-                      {/* Card top: key + priority */}
-                      <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center justify-between">
                         <Link
                           href={`/bugs/${bug.key}`}
                           className="font-mono text-xs font-bold text-violet-600 hover:underline"
-                          onClick={(e) => e.stopPropagation()}
                         >
                           {bug.key}
                         </Link>
-                        <PriorityBadge priority={bug.priority} />
+                        <SeverityBadge severity={bug.severity} />
                       </div>
 
-                      {/* Title */}
-                      <Link href={`/bugs/${bug.key}`} onClick={(e) => e.stopPropagation()}>
-                        <p className="text-sm font-medium text-slate-800 leading-snug line-clamp-2 mb-2 hover:text-violet-700 transition">
-                          {bug.title}
-                        </p>
+                      <Link
+                        href={`/bugs/${bug.key}`}
+                        className="block text-xs font-medium text-slate-800 group-hover:text-violet-700 transition leading-snug line-clamp-2"
+                      >
+                        {bug.title}
                       </Link>
 
-                      {/* Component */}
-                      <p className="text-[11px] text-slate-400 font-mono mb-3 truncate">
-                        {bug.component?.name}
-                      </p>
-
-                      {/* Card footer: severity + assignee + comments */}
-                      <div className="flex items-center justify-between pt-2 border-t border-slate-100">
-                        <SeverityBadge severity={bug.severity} />
-
-                        <div className="flex items-center gap-2">
-                          {bug._count?.comments > 0 && (
-                            <span className="flex items-center gap-0.5 text-[11px] text-slate-400">
-                              <MessageSquare className="w-3 h-3" />
-                              {bug._count.comments}
-                            </span>
-                          )}
-
-                          {bug.assignee ? (
-                            <div
-                              className="w-6 h-6 rounded-full bg-violet-100 border border-violet-200 flex items-center justify-center text-[10px] font-bold text-violet-700"
-                              title={bug.assignee.name}
-                            >
-                              {bug.assignee.name.charAt(0)}
-                            </div>
-                          ) : (
-                            <div className="w-6 h-6 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-[10px] text-slate-400">
-                              ?
-                            </div>
-                          )}
-                        </div>
+                      <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1 border-t border-slate-100 font-mono">
+                        <span>{bug.product?.name}</span>
+                        {bug.assignee ? (
+                          <span className="text-slate-700 font-semibold">{bug.assignee.name.split(" ")[0]}</span>
+                        ) : (
+                          <span className="italic text-slate-300">Unassigned</span>
+                        )}
                       </div>
                     </div>
                   ))

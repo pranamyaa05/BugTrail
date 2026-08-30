@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { recordAuditLog } from "@/lib/audit";
 import { BUG_STATUSES, BUG_SEVERITIES, BUG_PRIORITIES } from "@/lib/workflow";
 import { bugTrailEvents } from "@/lib/events";
+import { getSession } from "@/lib/auth";
 
 export async function GET(req: NextRequest) {
   try {
@@ -14,15 +15,32 @@ export async function GET(req: NextRequest) {
     const productId = searchParams.get("productId");
     const componentId = searchParams.get("componentId");
     const assigneeId = searchParams.get("assigneeId");
+    const teamId = searchParams.get("teamId");
+
+    const session = await getSession(req);
+    const activeTeamId = teamId || session.activeTeam?.id;
 
     const where: any = {};
 
-    if (search) {
+    if (activeTeamId) {
       where.OR = [
+        { teamId: activeTeamId },
+        { teamId: null }, // Include legacy demo bugs
+      ];
+    }
+
+    if (search) {
+      const searchCondition = [
         { title: { contains: search } },
         { description: { contains: search } },
         { key: { contains: search } },
       ];
+      if (where.OR) {
+        where.AND = [{ OR: where.OR }, { OR: searchCondition }];
+        delete where.OR;
+      } else {
+        where.OR = searchCondition;
+      }
     }
 
     if (status && status !== "ALL") {
@@ -71,12 +89,15 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    const session = await getSession(req);
     const body = await req.json();
     const {
       title,
       description,
       productId,
+      productName,
       componentId,
+      componentName,
       reporterId,
       assigneeId,
       severity = "NORMAL",
@@ -85,11 +106,50 @@ export async function POST(req: NextRequest) {
       customFields = {},
     } = body;
 
-    if (!title || !description || !productId || !componentId || !reporterId) {
+    const effectiveReporterId = reporterId || session.user?.id;
+    const effectiveTeamId = session.activeTeam?.id;
+
+    if (!title || !description || (!productId && !productName) || (!componentId && !componentName) || !effectiveReporterId) {
       return NextResponse.json(
-        { error: "Missing required fields: title, description, productId, componentId, reporterId are required." },
+        { error: "Missing required fields: title, description, Product, Component, and reporterId are required." },
         { status: 400 }
       );
+    }
+
+    // Resolve or auto-create Product if custom name typed
+    let targetProductId = productId;
+    if (!targetProductId || targetProductId === "CUSTOM") {
+      const pName = (productName || "Custom Product").trim();
+      let prod = await prisma.product.findFirst({ where: { name: pName } });
+      if (!prod) {
+        prod = await prisma.product.create({
+          data: {
+            name: pName,
+            description: `Custom Product created via File Bug`,
+            teamId: effectiveTeamId,
+          },
+        });
+      }
+      targetProductId = prod.id;
+    }
+
+    // Resolve or auto-create Component if custom name typed
+    let targetComponentId = componentId;
+    if (!targetComponentId || targetComponentId === "CUSTOM") {
+      const cName = (componentName || "General Component").trim();
+      let comp = await prisma.component.findFirst({
+        where: { productId: targetProductId, name: cName },
+      });
+      if (!comp) {
+        comp = await prisma.component.create({
+          data: {
+            productId: targetProductId,
+            name: cName,
+            description: "Custom Component created via File Bug",
+          },
+        });
+      }
+      targetComponentId = comp.id;
     }
 
     // Get the next sequential bug number
@@ -105,15 +165,16 @@ export async function POST(req: NextRequest) {
       data: {
         bugNumber: nextNumber,
         key,
-        title,
-        description,
-        productId,
-        componentId,
-        reporterId,
+        title: title.trim(),
+        description: description.trim(),
+        teamId: effectiveTeamId,
+        productId: targetProductId,
+        componentId: targetComponentId,
+        reporterId: effectiveReporterId,
         assigneeId: assigneeId || null,
-        severity: BUG_SEVERITIES.includes(severity) ? severity : "NORMAL",
-        priority: BUG_PRIORITIES.includes(priority) ? priority : "P3",
-        status: BUG_STATUSES.includes(status) ? status : "UNCONFIRMED",
+        severity: severity || "NORMAL",
+        priority: priority || "P3",
+        status: status || "UNCONFIRMED",
         customFields: JSON.stringify(customFields),
       },
       include: {
@@ -127,7 +188,7 @@ export async function POST(req: NextRequest) {
     // Record genesis audit log
     await recordAuditLog({
       bugId: newBug.id,
-      actorId: reporterId,
+      actorId: effectiveReporterId,
       action: "CREATE",
       newValue: `Bug filed with status ${newBug.status}, priority ${newBug.priority}, severity ${newBug.severity}`,
     });

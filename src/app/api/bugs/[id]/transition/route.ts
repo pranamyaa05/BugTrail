@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { validateStatusTransition, BugStatus, BugResolution } from "@/lib/workflow";
 import { recordAuditLog } from "@/lib/audit";
 import { bugTrailEvents } from "@/lib/events";
+import { getSession, hasPermission } from "@/lib/auth";
 
 export async function POST(
   req: NextRequest,
@@ -13,10 +14,22 @@ export async function POST(
     const body = await req.json();
     const { nextStatus, resolution, actorId, comment } = body;
 
-    if (!nextStatus || !actorId) {
+    const session = await getSession(req);
+    const effectiveActorId = actorId || session.user?.id;
+    const effectiveRole = session.role || session.user?.role || "DEVELOPER";
+
+    if (!nextStatus || !effectiveActorId) {
       return NextResponse.json(
         { error: "nextStatus and actorId are required parameters." },
         { status: 400 }
+      );
+    }
+
+    // SERVER-SIDE RBAC ENFORCEMENT: Check permission
+    if (!hasPermission(effectiveRole, "TRANSITION_STATUS")) {
+      return NextResponse.json(
+        { error: `Server-side Authorization Error: Users with role '${effectiveRole}' are not authorized to execute workflow status transitions.` },
+        { status: 403 }
       );
     }
 
@@ -71,7 +84,7 @@ export async function POST(
     // Record status change audit log
     await recordAuditLog({
       bugId: bug.id,
-      actorId,
+      actorId: effectiveActorId,
       action: "STATUS_CHANGE",
       fieldChanged: "status",
       oldValue: bug.status,
@@ -81,7 +94,7 @@ export async function POST(
     if (updateData.resolution !== undefined && updateData.resolution !== bug.resolution) {
       await recordAuditLog({
         bugId: bug.id,
-        actorId,
+        actorId: effectiveActorId,
         action: "RESOLUTION_CHANGE",
         fieldChanged: "resolution",
         oldValue: bug.resolution,
@@ -94,14 +107,14 @@ export async function POST(
       await prisma.comment.create({
         data: {
           bugId: bug.id,
-          authorId: actorId,
+          authorId: effectiveActorId,
           body: comment,
         },
       });
 
       await recordAuditLog({
         bugId: bug.id,
-        actorId,
+        actorId: effectiveActorId,
         action: "COMMENT",
         newValue: "Added status transition comment",
       });

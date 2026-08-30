@@ -24,10 +24,13 @@ interface CreateBugModalProps {
 }
 
 export function CreateBugModal({ isOpen, onClose, onSuccess }: CreateBugModalProps) {
-  const { currentUser, users } = useUser();
+  const { currentUser, activeTeam } = useUser();
   const [products, setProducts] = useState<ProductItem[]>([]);
-  const [selectedProductId, setSelectedProductId] = useState("");
-  const [selectedComponentId, setSelectedComponentId] = useState("");
+  const [teamMembers, setTeamMembers] = useState<any[]>([]);
+
+  // Input states (users can type directly OR pick from datalist dropdown)
+  const [productName, setProductName] = useState("");
+  const [componentName, setComponentName] = useState("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [severity, setSeverity] = useState("NORMAL");
@@ -35,9 +38,10 @@ export function CreateBugModal({ isOpen, onClose, onSuccess }: CreateBugModalPro
   const [assigneeId, setAssigneeId] = useState("");
   const [osField, setOsField] = useState("All / Cross-Platform");
   const [buildVersion, setBuildVersion] = useState("Nightly 2026.08");
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
+
   // AI State
   const [isTriaging, setIsTriaging] = useState(false);
   const [aiRationale, setAiRationale] = useState<string | null>(null);
@@ -46,30 +50,35 @@ export function CreateBugModal({ isOpen, onClose, onSuccess }: CreateBugModalPro
 
   useEffect(() => {
     if (isOpen) {
+      // Fetch products for current active team
       fetch("/api/products")
         .then((res) => res.json())
         .then((data: ProductItem[]) => {
           setProducts(data);
-          if (data.length > 0) {
-            setSelectedProductId(data[0].id);
+          if (data.length > 0 && !productName) {
+            setProductName(data[0].name);
             if (data[0].components.length > 0) {
-              setSelectedComponentId(data[0].components[0].id);
+              setComponentName(data[0].components[0].name);
             }
           }
         })
         .catch((err) => console.error("Failed to load products", err));
+
+      // Fetch ONLY team members of the active workspace for Assignee dropdown
+      fetch("/api/users")
+        .then((res) => res.json())
+        .then((data) => {
+          if (Array.isArray(data)) setTeamMembers(data);
+        })
+        .catch((err) => console.error("Failed to load team members", err));
     }
   }, [isOpen]);
 
-  const handleProductChange = (prodId: string) => {
-    setSelectedProductId(prodId);
-    const prod = products.find((p) => p.id === prodId);
-    if (prod && prod.components.length > 0) {
-      setSelectedComponentId(prod.components[0].id);
-    } else {
-      setSelectedComponentId("");
-    }
-  };
+  // Find components of selected product if product matches existing one
+  const matchedProduct = products.find(
+    (p) => p.name.toLowerCase() === productName.trim().toLowerCase()
+  );
+  const availableComponents = matchedProduct ? matchedProduct.components : [];
 
   useEffect(() => {
     if (!title.trim() && !description.trim()) {
@@ -125,20 +134,37 @@ export function CreateBugModal({ isOpen, onClose, onSuccess }: CreateBugModalPro
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentUser) {
-      setError("Please select a logged-in user persona first.");
+      setError("Please log in to file bugs.");
       return;
     }
     if (!title.trim() || !description.trim()) {
       setError("Title and description are required.");
       return;
     }
-    if (!selectedProductId || !selectedComponentId) {
-      setError("Please select a Product and Component.");
+    if (!productName.trim()) {
+      setError("Product is required.");
+      return;
+    }
+    if (!componentName.trim()) {
+      setError("Component is required.");
       return;
     }
 
     setIsSubmitting(true);
     setError(null);
+
+    // Resolve if product matches existing DB product ID or custom string
+    const existingProd = products.find(
+      (p) => p.name.toLowerCase() === productName.trim().toLowerCase()
+    );
+    const productId = existingProd ? existingProd.id : "CUSTOM";
+    const finalProductName = productName.trim();
+
+    const existingComp = existingProd?.components.find(
+      (c) => c.name.toLowerCase() === componentName.trim().toLowerCase()
+    );
+    const componentId = existingComp ? existingComp.id : "CUSTOM";
+    const finalComponentName = componentName.trim();
 
     try {
       const res = await fetch("/api/bugs", {
@@ -147,8 +173,10 @@ export function CreateBugModal({ isOpen, onClose, onSuccess }: CreateBugModalPro
         body: JSON.stringify({
           title: title.trim(),
           description: description.trim(),
-          productId: selectedProductId,
-          componentId: selectedComponentId,
+          productId,
+          productName: finalProductName,
+          componentId,
+          componentName: finalComponentName,
           reporterId: currentUser.id,
           assigneeId: assigneeId || null,
           severity,
@@ -180,8 +208,6 @@ export function CreateBugModal({ isOpen, onClose, onSuccess }: CreateBugModalPro
 
   if (!isOpen) return null;
 
-  const currentProduct = products.find((p) => p.id === selectedProductId);
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
       <div className="relative w-full max-w-2xl bg-white border border-slate-200 rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
@@ -193,7 +219,9 @@ export function CreateBugModal({ isOpen, onClose, onSuccess }: CreateBugModalPro
             </div>
             <div>
               <h2 className="text-base font-semibold text-slate-800">File a New Defect Report</h2>
-              <p className="text-xs text-slate-500">Standard Bugzilla Product/Component Hierarchy & Workflow</p>
+              <p className="text-xs text-slate-500">
+                Workspace: <strong className="text-violet-700">{activeTeam?.name || "My Workspace"}</strong>
+              </p>
             </div>
           </div>
           <button
@@ -213,40 +241,46 @@ export function CreateBugModal({ isOpen, onClose, onSuccess }: CreateBugModalPro
             </div>
           )}
 
-          {/* Product & Component Row */}
+          {/* Product & Component (Native HTML5 Combobox with datalist - NO mode buttons!) */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Product Input + Datalist */}
             <div>
               <label className="block text-xs font-medium text-slate-500 mb-1.5">
                 Product <span className="text-red-500">*</span>
               </label>
-              <select
-                value={selectedProductId}
-                onChange={(e) => handleProductChange(e.target.value)}
-                className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition"
-              >
+              <input
+                type="text"
+                list="product-datalist"
+                placeholder=""
+                value={productName}
+                onChange={(e) => setProductName(e.target.value)}
+                className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-800 text-xs focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition font-medium"
+              />
+              <datalist id="product-datalist">
                 {products.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
+                  <option key={p.id} value={p.name} />
                 ))}
-              </select>
+              </datalist>
             </div>
 
+            {/* Component Input + Datalist */}
             <div>
               <label className="block text-xs font-medium text-slate-500 mb-1.5">
                 Component <span className="text-red-500">*</span>
               </label>
-              <select
-                value={selectedComponentId}
-                onChange={(e) => setSelectedComponentId(e.target.value)}
-                className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition"
-              >
-                {currentProduct?.components.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
+              <input
+                type="text"
+                list="component-datalist"
+                placeholder=""
+                value={componentName}
+                onChange={(e) => setComponentName(e.target.value)}
+                className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-800 text-xs focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition font-medium"
+              />
+              <datalist id="component-datalist">
+                {availableComponents.map((c) => (
+                  <option key={c.id} value={c.name} />
                 ))}
-              </select>
+              </datalist>
             </div>
           </div>
 
@@ -257,10 +291,10 @@ export function CreateBugModal({ isOpen, onClose, onSuccess }: CreateBugModalPro
             </label>
             <input
               type="text"
-              placeholder="e.g. Memory leak during WebSocket frame deserialization"
+              placeholder=""
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition"
+              className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition text-xs font-medium"
             />
           </div>
 
@@ -271,17 +305,17 @@ export function CreateBugModal({ isOpen, onClose, onSuccess }: CreateBugModalPro
             </label>
             <textarea
               rows={4}
-              placeholder="Detailed description, steps to reproduce, expected vs actual behavior..."
+              placeholder=""
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition font-mono text-xs"
+              className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition font-mono text-xs"
             />
           </div>
 
           {/* AI Dedup Banner */}
           {isCheckingDedup && (
              <div className="flex items-center gap-2 text-xs text-slate-500 italic">
-               <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+               <RefreshCw className="w-3.5 h-3.5 animate-spin text-violet-600" />
                Checking for potential duplicates...
              </div>
           )}
@@ -333,102 +367,98 @@ export function CreateBugModal({ isOpen, onClose, onSuccess }: CreateBugModalPro
 
           {/* Severity, Priority, Assignee */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Severity */}
             <div>
               <label className="block text-xs font-medium text-slate-500 mb-1.5">Severity</label>
-              <select
+              <input
+                type="text"
+                list="severity-datalist"
+                placeholder=""
                 value={severity}
                 onChange={(e) => setSeverity(e.target.value)}
-                className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition text-xs"
-              >
+                className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:border-violet-500 transition text-xs font-medium"
+              />
+              <datalist id="severity-datalist">
                 {BUG_SEVERITIES.map((sev) => (
-                  <option key={sev} value={sev}>
-                    {sev}
-                  </option>
+                  <option key={sev} value={sev} />
                 ))}
-              </select>
+              </datalist>
             </div>
 
+            {/* Priority */}
             <div>
               <label className="block text-xs font-medium text-slate-500 mb-1.5">Priority</label>
-              <select
+              <input
+                type="text"
+                list="priority-datalist"
+                placeholder=""
                 value={priority}
                 onChange={(e) => setPriority(e.target.value)}
-                className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition text-xs"
-              >
+                className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:border-violet-500 transition text-xs font-medium"
+              />
+              <datalist id="priority-datalist">
                 {BUG_PRIORITIES.map((prio) => (
-                  <option key={prio} value={prio}>
-                    {prio}
-                  </option>
+                  <option key={prio} value={prio} />
                 ))}
-              </select>
+              </datalist>
             </div>
 
+            {/* Assignee (ONLY shows members of active workspace!) */}
             <div>
               <label className="block text-xs font-medium text-slate-500 mb-1.5">Assignee</label>
               <select
                 value={assigneeId}
                 onChange={(e) => setAssigneeId(e.target.value)}
-                className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition text-xs"
+                className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:border-violet-500 transition text-xs"
               >
                 <option value="">(Unassigned)</option>
-                {users.map((u) => (
+                {teamMembers.map((u) => (
                   <option key={u.id} value={u.id}>
-                    {u.name}
+                    {u.name} ({u.role})
                   </option>
                 ))}
               </select>
             </div>
           </div>
 
-          {/* Custom Fields Collapsible / Info */}
-          <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-3">
-            <div className="flex items-center justify-between text-xs text-slate-500 font-medium">
-              <span>Bugzilla Custom Fields (JSONB)</span>
-              <span className="text-[10px] text-violet-600 font-mono">Dynamic Schema</span>
+          {/* OS & Build version */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-slate-500 mb-1.5">Operating System / Platform</label>
+              <input
+                type="text"
+                value={osField}
+                onChange={(e) => setOsField(e.target.value)}
+                className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:border-violet-500 transition text-xs font-mono"
+              />
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-              <div>
-                <label className="block text-[11px] text-slate-500 mb-1">Target OS / Architecture</label>
-                <input
-                  type="text"
-                  value={osField}
-                  onChange={(e) => setOsField(e.target.value)}
-                  className="w-full bg-white border border-slate-200 rounded px-2.5 py-1.5 text-slate-800 text-xs focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20"
-                />
-              </div>
-              <div>
-                <label className="block text-[11px] text-slate-500 mb-1">Build / Version Tag</label>
-                <input
-                  type="text"
-                  value={buildVersion}
-                  onChange={(e) => setBuildVersion(e.target.value)}
-                  className="w-full bg-white border border-slate-200 rounded px-2.5 py-1.5 text-slate-800 text-xs focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20"
-                />
-              </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-500 mb-1.5">Target Build / Version</label>
+              <input
+                type="text"
+                value={buildVersion}
+                onChange={(e) => setBuildVersion(e.target.value)}
+                className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:border-violet-500 transition text-xs font-mono"
+              />
             </div>
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex items-center justify-between pt-3 border-t border-slate-200 bg-white">
-            <div className="text-xs text-slate-500">
-              Reporter: <span className="text-slate-800 font-medium">{currentUser?.name || "Anonymous"}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-4 py-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition text-xs font-medium"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="px-4 py-2 rounded-lg bg-violet-600 hover:bg-violet-700 text-white font-semibold transition text-xs flex items-center gap-1.5 shadow-sm disabled:opacity-50"
-              >
-                {isSubmitting ? "Filing..." : "Submit Bug"}
-              </button>
-            </div>
+          {/* Footer */}
+          <div className="flex justify-end gap-3 pt-4 border-t border-slate-200">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 text-xs font-medium transition"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="px-5 py-2 rounded-lg bg-violet-600 hover:bg-violet-700 text-white font-semibold text-xs transition disabled:opacity-50 flex items-center gap-1.5 shadow-sm"
+            >
+              {isSubmitting ? "Filing Bug..." : "File Defect Report"}
+            </button>
           </div>
         </form>
       </div>
