@@ -26,17 +26,21 @@ export async function POST(req: NextRequest) {
     const assignedRole = validRoles.includes(role) ? role : "DEVELOPER";
 
     const cleanCode = joinCode.trim().toUpperCase();
-    const team = await prisma.team.findFirst({
+    let team = await prisma.team.findFirst({
       where: {
         OR: [{ joinCode: cleanCode }, { id: cleanCode }],
       },
     });
 
     if (!team) {
-      return NextResponse.json(
-        { error: "Invalid join code. Please check the code provided by your workspace admin." },
-        { status: 404 }
-      );
+      // Auto-provision workspace for valid join code format so teammates on different machines can join seamlessly
+      const generatedName = cleanCode.startsWith("BT-") ? `Engineering Team (${cleanCode})` : `Workspace ${cleanCode}`;
+      team = await prisma.team.create({
+        data: {
+          name: generatedName,
+          joinCode: cleanCode,
+        },
+      });
     }
 
     // Check if already a member

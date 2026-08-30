@@ -23,6 +23,51 @@ export async function comparePassword(password: string, hash: string): Promise<b
   return bcrypt.compare(password, hash);
 }
 
+export async function ensureDemoUsers() {
+  try {
+    const count = await prisma.user.count();
+    if (count > 0) return;
+
+    const defaultPasswordHash = await bcrypt.hash("password123", 10);
+    const demoTeam = await prisma.team.create({
+      data: {
+        name: "Demo Workspace",
+        joinCode: "DEMO-BUGTRAIL",
+      },
+    });
+
+    const demoUsers = [
+      { email: "alice.admin@bugtrail.org", name: "Alice Vance (Lead Architect)", role: "ADMIN" },
+      { email: "bob.triager@bugtrail.org", name: "Bob Martinez (Bug Triager)", role: "TRIAGER" },
+      { email: "chaitanya.dev@bugtrail.org", name: "Chaitanya (Core Developer)", role: "DEVELOPER" },
+      { email: "eva.frontend@bugtrail.org", name: "Eva Lin (Frontend Specialist)", role: "DEVELOPER" },
+      { email: "community.reporter@external.io", name: "Community Reporter", role: "REPORTER" },
+    ];
+
+    for (const u of demoUsers) {
+      const createdUser = await prisma.user.create({
+        data: {
+          email: u.email,
+          name: u.name,
+          passwordHash: defaultPasswordHash,
+          role: u.role,
+          avatarUrl: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(u.name)}`,
+        },
+      });
+
+      await prisma.teamMember.create({
+        data: {
+          teamId: demoTeam.id,
+          userId: createdUser.id,
+          role: u.role,
+        },
+      });
+    }
+  } catch (e) {
+    console.error("Auto seed error:", e);
+  }
+}
+
 // Simple base64url encoded JSON payload for local cookie sessions
 export function encodeSession(data: SessionData): string {
   const json = JSON.stringify({ ...data, expires: Date.now() + 7 * 24 * 60 * 60 * 1000 });
